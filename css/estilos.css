@@ -1396,6 +1396,7 @@ body.modo-noche .support-form textarea { border-color: var(--linea); background:
 .admin-nav-link { display: flex; align-items: center; width: 100%; min-height: 42px; padding: .55rem .7rem; border: 0; border-radius: 9px; background: transparent; color: var(--tinta); font: 600 .86rem var(--texto); text-align: left; cursor: pointer; transition: background .18s, color .18s; }
 .admin-nav-link:hover { background: rgba(139, 100, 119, .08); }
 .admin-nav-link.activo { background: #392b31; color: #fffaf7; }
+.admin-nav-count { display: inline-grid; place-items: center; min-width: 20px; height: 20px; margin-left: auto; padding: 0 .35rem; border-radius: 999px; background: #a64b46; color: #fff; font-size: .68rem; font-variant-numeric: tabular-nums; }
 .admin-dashboard-content { display: grid; min-width: 0; gap: 1rem; }
 .admin-dashboard-content [data-admin-section][hidden] { display: none !important; }
 .admin-overview { display: grid; gap: 1rem; padding: clamp(1rem, 2.4vw, 1.5rem); border: 1px solid rgba(115, 82, 94, .16); border-radius: 16px; background: rgba(255, 255, 255, .72); }
@@ -1412,6 +1413,17 @@ body.modo-noche .support-form textarea { border-color: var(--linea); background:
 .admin-error { color: #a53d43; background: rgba(165, 61, 67, .08); }
 
 .festivity-editor { display: grid; grid-template-columns: minmax(260px, .8fr) minmax(320px, 1.2fr); align-items: start; gap: 1.2rem; }
+.seasonal-effects { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .65rem; margin-bottom: 1rem; }
+.seasonal-effect-toggle { display: flex; align-items: center; justify-content: space-between; gap: .8rem; min-width: 0; padding: .8rem .9rem; border: 1px solid var(--linea); border-radius: 10px; background: rgba(255,255,255,.55); cursor: pointer; }
+.seasonal-effect-toggle > span { display: grid; gap: .15rem; }
+.seasonal-effect-toggle strong { font-size: .84rem; }
+.seasonal-effect-toggle small { max-width: 34ch; font-size: .72rem; opacity: .7; }
+.seasonal-effect-toggle input { appearance: none; position: relative; flex: 0 0 42px; width: 42px; height: 24px; margin: 0; border: 1px solid rgba(67, 55, 59, .25); border-radius: 999px; background: #d7d0cf; cursor: pointer; transition: background .18s, border-color .18s; }
+.seasonal-effect-toggle input::before { content: ''; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.2); transition: transform .18s; }
+.seasonal-effect-toggle input:checked { border-color: #467a63; background: #467a63; }
+.seasonal-effect-toggle input:checked::before { transform: translateX(18px); }
+.seasonal-effect-toggle input:focus-visible { outline: 2px solid var(--malva); outline-offset: 3px; }
+.seasonal-effect-toggle input:disabled { cursor: wait; opacity: .6; }
 .festivity-pages, .product-tone-editor { display: grid; gap: .55rem; min-width: 0; margin: 0; padding: .8rem; border: 1px solid var(--linea); border-radius: 12px; }
 .festivity-pages legend, .product-tone-editor legend { padding: 0 .35rem; font-size: .8rem; font-weight: 700; }
 .festivity-pages { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -1440,6 +1452,12 @@ body.modo-noche .support-form textarea { border-color: var(--linea); background:
 .festivity-preview-image-wrap img { position: absolute; max-width: 90%; max-height: 90%; object-fit: contain; cursor: move; touch-action: none; filter: drop-shadow(0 4px 8px rgba(0,0,0,.2)); }
 .festivity-preview-panel > p { margin: 0; opacity: .68; font-size: .72rem; line-height: 1.45; }
 .decoracion-festiva { object-fit: contain; }
+.efecto-temporada { position: fixed; inset: 0; z-index: 20; overflow: hidden; pointer-events: none; }
+.efecto-temporada-particula { position: absolute; top: -8vh; display: block; width: var(--tamano-caida); height: var(--tamano-caida); animation: caida-estacional var(--duracion-caida) linear var(--retardo-caida) infinite; will-change: transform; }
+.efecto-temporada-copo { border-radius: 50%; background: rgba(255,255,255,.88); box-shadow: 0 0 6px rgba(255,255,255,.65); }
+.efecto-temporada-calabaza { display: grid; place-items: center; line-height: 1; filter: drop-shadow(0 2px 3px rgba(48, 28, 12, .2)); }
+@keyframes caida-estacional { 0% { transform: translate3d(0, -8vh, 0) rotate(0); opacity: 0; } 12% { opacity: .92; } 100% { transform: translate3d(var(--deriva-caida), 112vh, 0) rotate(var(--giro-caida)); opacity: .5; } }
+@media (prefers-reduced-motion: reduce) { .efecto-temporada-particula { animation: none; will-change: auto; opacity: .55; } }
 .carrusel-esperando { visibility: hidden; }
 .carrusel[hidden], .carrusel .slide[hidden] { display: none !important; }
 .admin-carousel-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -1458,7 +1476,8 @@ body.modo-noche .support-form textarea { border-color: var(--linea); background:
 
 @media (max-width: 900px) {
   .admin-dashboard-layout { grid-template-columns: 1fr; }
-  .admin-sidebar { position: sticky; top: .4rem; z-index: 5; grid-template-columns: repeat(6, max-content); overflow-x: auto; padding: .45rem; }
+  .admin-sidebar { position: sticky; top: .4rem; z-index: 5; grid-template-columns: repeat(7, max-content); overflow-x: auto; padding: .45rem; }
+  .seasonal-effects { grid-template-columns: 1fr; }
   .admin-sidebar-label { display: none; }
   .admin-nav-link { width: auto; min-height: 38px; padding: .45rem .65rem; white-space: nowrap; }
   .festivity-editor { grid-template-columns: 1fr; }
