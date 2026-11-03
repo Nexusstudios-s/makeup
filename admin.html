@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/estilos.css?v=20261103f">
+  <link rel="stylesheet" href="css/estilos.css?v=20261103h">
 </head>
 <body class="admin-page">
   <header class="cabecera admin-header">
@@ -184,6 +184,12 @@ Angelica Cardenas</span></a>
           </section>
 
           <section class="admin-card admin-card-wide" data-admin-section="content">
+            <h2>Reseñas por revisar</h2>
+            <p class="admin-help">Las reseñas solo aparecen en el catálogo después de aprobarlas.</p>
+            <div class="admin-list" data-product-reviews-list aria-live="polite"></div>
+          </section>
+
+          <section class="admin-card admin-card-wide" data-admin-section="content">
             <h2>Carrusel del inicio</h2>
             <form data-carousel-form class="admin-form admin-carousel-form">
               <label>Título<input name="title" type="text" required maxlength="100" placeholder="Tu piel, tu tono"></label>
@@ -305,6 +311,14 @@ Angelica Cardenas</span></a>
               <label>
                 Precio (COP)
                 <input name="precio" type="number" step="1" placeholder="48000">
+              </label>
+              <label>
+                Disponibilidad real
+                <select name="availability">
+                  <option value="inquire">Consultar disponibilidad</option>
+                  <option value="available">Disponible</option>
+                  <option value="soldOut">Agotado</option>
+                </select>
               </label>
               <label>
                 Descripción
@@ -479,6 +493,6 @@ Angelica Cardenas</span></a>
 
   <script src="js/productos.js?v=20261103"></script>
   <script src="js/security.js"></script>
-  <script type="module" src="js/admin.js?v=20261103g"></script>
+  <script type="module" src="js/admin.js?v=20261103k"></script>
 </body>
 </html>

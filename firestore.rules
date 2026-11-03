@@ -32,9 +32,62 @@ service cloud.firestore {
       return resource.data.get('published', false) == true;
     }
 
+    function reviewBadgeIsValid(badge) {
+      let claimed = request.resource.data.get('authorBadges', {}).get(badge, false);
+      let profilePath = /databases/$(database)/documents/profiles/$(request.auth.uid);
+      return claimed is bool && (!claimed || (
+        exists(profilePath) &&
+        get(profilePath).data.get('badges', {}).keys().hasAny([badge])
+      ));
+    }
+
     match /products/{productId} {
       allow read: if published() || isStaff();
       allow create, update, delete: if isStaff();
+
+      match /reviews/{reviewId} {
+        allow read: if isStaff() || (resource.data.get('approved', false) == true &&
+          get(/databases/$(database)/documents/products/$(productId)).data.get('published', false) == true) ||
+          (signedIn() && request.auth.uid == resource.data.get('authorId', ''));
+        allow create: if signedIn()
+          && reviewId == request.auth.uid
+          && request.resource.data.keys().hasOnly([
+            'productId', 'productName', 'authorId', 'authorName', 'authorBadges',
+            'rating', 'body', 'approved', 'createdAt', 'updatedAt'
+          ])
+          && request.resource.data.productId == productId
+          && request.resource.data.authorId == request.auth.uid
+          && request.resource.data.authorName is string
+          && request.resource.data.authorName.size() <= 70
+          && request.resource.data.authorBadges is map
+          && request.resource.data.authorBadges.keys().hasOnly(['cliente', 'vip', 'veterano'])
+          && reviewBadgeIsValid('cliente')
+          && reviewBadgeIsValid('vip')
+          && reviewBadgeIsValid('veterano')
+          && request.resource.data.rating is int
+          && request.resource.data.rating >= 1
+          && request.resource.data.rating <= 5
+          && request.resource.data.body is string
+          && request.resource.data.body.size() >= 8
+          && request.resource.data.body.size() <= 1000
+          && request.resource.data.approved == false
+          && request.resource.data.createdAt is timestamp
+          && request.resource.data.updatedAt is timestamp;
+        allow update: if isStaff() || (signedIn()
+          && request.auth.uid == resource.data.authorId
+          && resource.data.get('approved', false) == false
+          && request.resource.data.get('approved', false) == false
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['rating', 'body', 'updatedAt'])
+          && request.resource.data.rating is int
+          && request.resource.data.rating >= 1
+          && request.resource.data.rating <= 5
+          && request.resource.data.body is string
+          && request.resource.data.body.size() >= 8
+          && request.resource.data.body.size() <= 1000);
+        allow delete: if isStaff() || (signedIn()
+          && request.auth.uid == resource.data.authorId
+          && resource.data.get('approved', false) == false);
+      }
     }
 
     match /categories/{categoryId} {
@@ -81,16 +134,20 @@ service cloud.firestore {
       allow read: if isOwner(userId) || isStaff();
       allow create: if isOwner(userId)
         && request.resource.data.keys().hasOnly([
-          'displayName', 'photoURL', 'bannerURL', 'description', 'createdAt', 'updatedAt'
+          'displayName', 'email', 'photoURL', 'bannerURL', 'description', 'createdAt', 'updatedAt'
         ])
         && request.resource.data.get('displayName', '') is string
+        && request.resource.data.get('email', '') is string
+        && (request.resource.data.get('email', '') == '' || request.resource.data.email == request.auth.token.email)
         && request.resource.data.get('description', '') is string
         && request.resource.data.get('description', '').size() <= 300;
       allow update: if isStaff() || (isOwner(userId)
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-          'displayName', 'photoURL', 'bannerURL', 'description', 'updatedAt'
+          'displayName', 'email', 'photoURL', 'bannerURL', 'description', 'updatedAt'
         ])
         && request.resource.data.get('displayName', '') is string
+        && request.resource.data.get('email', '') is string
+        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['email']) || request.resource.data.email == request.auth.token.email)
         && request.resource.data.get('description', '').size() <= 300);
       allow delete: if isStaff();
 
