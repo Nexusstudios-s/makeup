@@ -1,0 +1,46 @@
+PLAN FUTURO DE LA WEB
+
+OBJETIVO
+Conservar y mejorar la web actual. Mas adelante, vincular sus funciones con Firebase para administrar contenido y usuarios desde un panel, sin editar el codigo para las tareas cotidianas. Esta integracion aun no esta implementada.
+
+MEJORAS DE LA WEB
+1. Consultas de productos por WhatsApp: implementado con producto, precio y tono. Confirmar que el numero configurado corresponda al negocio.
+2. Reservas de maquillaje: implementado con servicio, nombre, fecha preferida, hora opcional y mensaje listo para WhatsApp.
+3. Mostrar ubicacion del estudio, horarios y como llegar cuando el negocio confirme esos datos. Pendiente: no se encontro direccion ni horario en el proyecto.
+4. Mostrar disponibilidad real de los productos; no inventar precios ni existencias.
+5. OPINIONES: dejar la seccion vacia por ahora. No publicar opiniones hasta contar con comentarios reales y permiso de sus autores.
+6. Filtros para la galeria: implementados para looks, productos, novias y cuidado facial.
+
+FUTURA INTEGRACION CON FIREBASE
+- Conectar el catalogo, galeria, anuncios, reservas y cuentas a Firebase mas adelante.
+- Crear un panel de administracion privado para publicar, editar y retirar productos, categorias, fotos, precios, disponibilidad y anuncios sin modificar archivos de codigo.
+- Los anuncios publicados desde el panel deben aparecer en la web para todos los visitantes.
+- El panel debe permitir consultar usuarios y eliminar cuentas cuando corresponda.
+- Proteger el panel y las acciones administrativas con roles, reglas de seguridad y validaciones del lado del servidor. No guardar claves privadas en el navegador.
+- Agregar numero nuevo de cel si cambiamos
+
+INICIO DE SESION Y REGISTRO
+- Agregar un boton visible de Iniciar sesion.
+- Al pulsarlo, abrir un modal de inicio de sesion y registro.
+- Integrar autenticacion real de Firebase con Google, GitHub y correo electronico con contrasena.
+- Incluir estados de carga, errores, cierre de sesion y recuperacion de contrasena.
+
+PERFILES DE CLIENTES
+- Permitir cambiar foto de perfil, banner y descripcion.
+- Mostrar compras del cliente y saldo asociado a movimientos reales.
+- No mostrar ni modificar saldos ficticios. Registrar los cambios de saldo y limitar su gestion al personal autorizado.
+
+INSIGNIAS
+- Cliente: para quien haya realizado una compra.
+- VIP: para clientes con beneficios definidos por el negocio.
+- Veterano/a: para clientes con antiguedad y compras recurrentes.
+- Solo el panel de administracion puede asignar o retirar insignias.
+- Mostrar el icono de la insignia junto al nombre del cliente.
+- Al pulsar el icono, abrir una tarjeta pequena que explique que significa y por que se asigno.
+
+ORDEN DE TRABAJO SUGERIDO
+1. Confirmar el numero real de WhatsApp, servicios, horarios, ubicacion y beneficios VIP.
+2. Terminar las mejoras visibles de catalogo, disponibilidad, reservas y filtros.
+3. Preparar Firebase Auth, Firestore y Storage con permisos seguros.
+4. Construir el panel de administracion y probar roles antes de habilitar publicaciones o gestion de usuarios.
+5. Activar perfiles, historial, saldo e insignias cuando existan datos reales y reglas de negocio definidas.

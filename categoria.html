@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{marca} · Productos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/estilos.css">
+</head>
+<body class="catalogo">
+<header class="cabecera">
+<div class="contenedor barra">
+<a class="marca notranslate" translate="no" href="index.html"><img class="logo-marca" src="assets/logo/ACV.png" alt=""><span class="marca-nombre" data-marca></span></a>
+<button class="menu-toggle" type="button" aria-expanded="false" aria-controls="menu-principal" aria-label="Abrir menú">
+<span></span><span></span><span></span>
+</button>
+<nav id="menu-principal">
+<a href="index.html">Inicio</a>
+<a href="index.html#categorias">Categorías</a>
+<a href="Ejemplos.html">Looks y ejemplos</a>
+<a href="Conexiones.html">Tiendas y conexiones</a>
+<a href="index.html#reservar">Reservar</a>
+</nav>
+<div class="acciones"><div class="idiomas notranslate" translate="no"></div><a class="boton" data-whatsapp target="_blank" rel="noopener">Escríbenos</a></div>
+</div>
+</header>
+
+<main class="contenedor">
+<div class="encabezado-cat">
+<div>
+<h1></h1>
+<p class="intro"></p>
+</div>
+<p class="total"></p>
+</div>
+
+<div class="chips"></div>
+
+<div class="barra-filtros">
+<input class="buscador" type="search" placeholder="Buscar en esta categoría" aria-label="Buscar productos">
+<select class="orden" aria-label="Ordenar productos">
+<option value="relevancia">Orden sugerido</option>
+<option value="nombre">Nombre A-Z</option>
+</select>
+</div>
+
+<div class="productos"></div>
+</main>
+
+<dialog class="detalle"></dialog>
+
+<footer class="pie">
+<div class="contenedor pie-grid">
+<div>
+<p class="marca notranslate" translate="no"><img class="logo-marca" src="assets/logo/ACV.png" alt=""><span class="marca-nombre" data-marca></span></p>
+<p class="pie-texto">Maquillaje para todos los tonos y todos los estilos.</p>
+</div>
+<div>
+<p class="pie-titulo">Categorías</p>
+<div class="pie-categorias"></div>
+</div>
+<div>
+<p class="pie-titulo">Información</p>
+<div class="pie-paginas">
+<a href="Ejemplos.html">Looks y ejemplos</a>
+<a href="Conexiones.html">Tiendas y conexiones</a>
+<a href="Condiciones-Venta.html">Condiciones de venta</a>
+<a href="Terminos-Condiciones.html">Términos y condiciones</a>
+</div>
+</div>
+<div>
+<p class="pie-titulo">Redes y contacto</p>
+<div class="redes">
+<a class="red-social" data-whatsapp target="_blank" rel="noopener" aria-label="WhatsApp" title="WhatsApp">
+<svg class="icono-red" viewBox="0 0 24 24" aria-hidden="true" fill="currentColor"><path d="M20.52 3.48A11.9 11.9 0 0 0 1.8 17.82L.2 23.7l6.03-1.58A11.9 11.9 0 0 0 20.52 3.48ZM12 21.3a9.3 9.3 0 0 1-4.74-1.3l-.34-.2-3.58.94.95-3.49-.22-.36A9.3 9.3 0 1 1 12 21.3Zm5.1-6.97c-.28-.14-1.66-.82-1.92-.91-.26-.1-.44-.14-.63.14-.18.28-.72.91-.88 1.1-.16.18-.32.2-.6.07-.28-.14-1.18-.44-2.25-1.4-.83-.73-1.4-1.64-1.57-1.92-.16-.28-.02-.43.12-.57.13-.12.28-.32.42-.48.14-.16.19-.28.28-.46.1-.18.05-.35-.02-.49-.07-.14-.63-1.52-.86-2.08-.23-.54-.46-.47-.63-.48h-.54c-.18 0-.48.07-.74.35-.26.28-.97.95-.97 2.32 0 1.36 1 2.68 1.13 2.86.14.18 1.97 3 4.77 4.2.67.28 1.2.45 1.6.57.67.21 1.28.18 1.76.11.54-.08 1.66-.68 1.9-1.33.23-.66.23-1.22.16-1.34-.07-.12-.25-.19-.53-.33Z"/></svg>
+<span>WhatsApp</span>
+</a>
+<a class="red-social" data-instagram target="_blank" rel="noopener" aria-label="Instagram" title="Instagram">
+<svg class="icono-red" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>
+<span>Instagram</span>
+</a>
+<a class="red-social" data-facebook target="_blank" rel="noopener" aria-label="Facebook, enlace pendiente de configurar" title="Enlace pendiente de configurar">
+<svg class="icono-red" viewBox="0 0 24 24" aria-hidden="true" fill="currentColor"><path d="M13.5 21v-8h2.7l.4-3.1h-3.1v-2c0-.9.3-1.5 1.6-1.5h1.7V3.6c-.3 0-1.3-.1-2.5-.1-2.5 0-4.2 1.5-4.2 4.3v2.1H7.3V13h2.8v8h3.4Z"/></svg>
+<span>Facebook</span>
+</a>
+<a class="red-social" data-tiktok target="_blank" rel="noopener" aria-label="TikTok, enlace pendiente de configurar" title="Enlace pendiente de configurar">
+<svg class="icono-red" viewBox="0 0 24 24" aria-hidden="true" fill="currentColor"><path d="M19.6 8.3a7.1 7.1 0 0 1-4.2-1.4v7.3a5.4 5.4 0 1 1-4.7-5.3v3.7a1.8 1.8 0 1 0 1.3 1.7V2.5h3.4c.2 2 1.6 3.6 3.6 3.9v1.9h.6Z"/></svg>
+<span>TikTok</span>
+</a>
+</div>
+</div>
+</div>
+<p class="contenedor derechos">© <span data-anio></span> <span class="notranslate" translate="no" data-marca-completa></span></p>
+</footer>
+
+<div id="google_translate_element" class="traductor"></div>
+<script src="js/productos.js"></script>
+<script src="js/principal.js"></script>
+<script src="js/catalogo.js"></script>
+<script src="js/traductor.js"></script>
+<script src="https://translate.google.com/translate_a/element.js?cb=iniciarTraductor"></script>
+</body>
+</html>
