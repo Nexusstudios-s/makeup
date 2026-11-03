@@ -48,6 +48,122 @@ Angelica Cardenas</span></a>
             <div class="admin-list" data-users-list aria-live="polite"></div>
           </section>
 
+          <section class="admin-card admin-card-wide">
+            <h2>Productos</h2>
+            <form data-product-form class="admin-form">
+              <label>
+                ID
+                <input name="id" type="text" placeholder="bas-1">
+              </label>
+              <label>
+                Nombre
+                <input name="nombre" type="text" required maxlength="120" placeholder="Base Atenea 1st Scene Serum Tinted">
+              </label>
+              <label>
+                Categoría
+                <input name="categoria" type="text" required maxlength="40" placeholder="bases">
+              </label>
+              <label>
+                Imagen
+                <input name="imagen" type="url" required maxlength="400" placeholder="https://...">
+              </label>
+              <label>
+                Precio (COP)
+                <input name="precio" type="number" step="1" placeholder="48000">
+              </label>
+              <label>
+                Descripción
+                <textarea name="descripcion" rows="3" required maxlength="500" placeholder="..."></textarea>
+              </label>
+              <label>
+                Detalles (JSON array)
+                <textarea name="detalles" rows="3" placeholder='["Envase de 30 ml","Consulta disponibilidad"]'></textarea>
+              </label>
+              <label>
+                Tonos (JSON array)
+                <textarea name="tonos" rows="3" placeholder='[{"n":"Light","c":"#f5ddcb"}]'></textarea>
+              </label>
+              <label class="admin-check">
+                <input name="published" type="checkbox" checked>
+                Publicado
+              </label>
+              <button class="boton" type="submit">Guardar producto</button>
+            </form>
+            <div class="admin-list" data-products-list aria-live="polite"></div>
+          </section>
+
+          <section class="admin-card">
+            <h2>Categorías</h2>
+            <form data-category-form class="admin-form">
+              <label>
+                ID
+                <input name="id" type="text" placeholder="bases">
+              </label>
+              <label>
+                Título
+                <input name="titulo" type="text" required maxlength="80" placeholder="Bases">
+              </label>
+              <label>
+                Texto
+                <textarea name="texto" rows="3" required maxlength="220" placeholder="Bases Atenea..."></textarea>
+              </label>
+              <label>
+                Imagen
+                <input name="imagen" type="url" required maxlength="400" placeholder="https://...">
+              </label>
+              <label>
+                Colores (JSON array)
+                <input name="colores" type="text" placeholder="["#ecd6c8","#d9b8a4"]">
+              </label>
+              <label class="admin-check">
+                <input name="published" type="checkbox" checked>
+                Publicada
+              </label>
+              <button class="boton" type="submit">Guardar categoría</button>
+            </form>
+            <div class="admin-list" data-categories-list aria-live="polite"></div>
+          </section>
+
+          <section class="admin-card">
+            <h2>Anuncios</h2>
+            <form data-announcement-form class="admin-form">
+              <label>
+                ID
+                <input name="id" type="text" placeholder="navidad-01">
+              </label>
+              <label>
+                Título
+                <input name="title" type="text" required maxlength="80" placeholder="Oferta especial">
+              </label>
+              <label>
+                Texto
+                <textarea name="body" rows="3" required maxlength="320" placeholder="..."></textarea>
+              </label>
+              <label>
+                Enlace
+                <input name="link" type="url" maxlength="400" placeholder="https://... o /categoria?c=bases">
+              </label>
+              <label>
+                Texto del enlace
+                <input name="linkLabel" type="text" maxlength="80" placeholder="Ver más">
+              </label>
+              <label>
+                Prioridad
+                <input name="priority" type="number" step="1" value="1">
+              </label>
+              <label>
+                Expira
+                <input name="expiresAt" type="date">
+              </label>
+              <label class="admin-check">
+                <input name="published" type="checkbox" checked>
+                Publicado
+              </label>
+              <button class="boton" type="submit">Guardar anuncio</button>
+            </form>
+            <div class="admin-list" data-announcements-list aria-live="polite"></div>
+          </section>
+
           <section class="admin-card">
             <h2>Insignias</h2>
             <form data-badge-form class="admin-form">
