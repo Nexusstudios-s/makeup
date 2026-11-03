@@ -12,9 +12,8 @@ import {
   updateProfile,
   EmailAuthProvider
 } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js';
-import { collection, doc, getDoc, getDocs, serverTimestamp, setDoc, updateDoc } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js';
-import { getDownloadURL, ref, uploadBytes } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-storage.js';
-import { auth, db, storage } from './firebase-client.js';
+import { collection, doc, getDoc, getDocs, serverTimestamp, setDoc } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js';
+import { auth, db } from './firebase-client.js';
 
 const dock = document.createElement('nav');
 dock.className = 'cuenta-dock';
@@ -89,8 +88,8 @@ modal.innerHTML = `
         <label>Nombre visible<input name="displayName" maxlength="70" autocomplete="name" required></label>
         <label>Sobre mí<textarea name="description" maxlength="300" rows="3" placeholder="Cuéntales algo sobre ti"></textarea></label>
         <div class="perfil-archivos">
-          <label>Foto de perfil<input name="avatar" type="file" accept="image/*"></label>
-          <label>Banner<input name="banner" type="file" accept="image/*"></label>
+          <label>URL foto perfil<input name="avatarUrl" type="url" placeholder="https://..." autocomplete="off"></label>
+          <label>URL banner<input name="bannerUrl" type="url" placeholder="https://..." autocomplete="off"></label>
         </div>
         <button class="boton auth-submit" type="submit" data-profile-save>Guardar perfil</button>
       </form>
@@ -202,6 +201,8 @@ async function cargarPerfil(usuario) {
   const form = modal.querySelector('[data-perfil-form]');
   form.elements.displayName.value = perfilActual.displayName || usuario.displayName || '';
   form.elements.description.value = perfilActual.description || '';
+  form.elements.avatarUrl.value = perfilActual.photoURL || usuario.photoURL || '';
+  form.elements.bannerUrl.value = perfilActual.bannerURL || '';
   const foto = modal.querySelector('[data-auth-avatar]');
   const inicial = modal.querySelector('[data-auth-inicial]');
   if (perfilActual.photoURL || usuario.photoURL) {
@@ -326,30 +327,16 @@ perfilForm.addEventListener('submit', async event => {
   mostrarFeedback('Guardando perfil…');
 
   try {
-    let photoURL = perfilActual?.photoURL || usuarioActual.photoURL || '';
-    let bannerURL = perfilActual?.bannerURL || '';
-    const archivos = [
-      { input: perfilForm.elements.avatar, key: 'avatar', set: value => { photoURL = value; } },
-      { input: perfilForm.elements.banner, key: 'banner', set: value => { bannerURL = value; } }
-    ];
-    for (const archivo of archivos) {
-      const file = archivo.input.files[0];
-      if (!file) continue;
-      if (!file.type.startsWith('image/') || file.size > 5 * 1024 * 1024) {
-        throw new Error('Usa una imagen de hasta 5 MB.');
-      }
-      const destino = ref(storage, `profiles/${usuarioActual.uid}/${archivo.key}-${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, '-')}`);
-      await uploadBytes(destino, file, { contentType: file.type });
-      archivo.set(await getDownloadURL(destino));
-    }
-
     const displayName = perfilForm.elements.displayName.value.trim();
     const description = perfilForm.elements.description.value.trim();
+    const photoURL = perfilForm.elements.avatarUrl.value.trim();
+    const bannerURL = perfilForm.elements.bannerUrl.value.trim();
+
     await updateProfile(usuarioActual, { displayName, photoURL: photoURL || null });
     await setDoc(doc(db, 'profiles', usuarioActual.uid), {
       displayName,
-      photoURL,
-      bannerURL,
+      photoURL: photoURL || '',
+      bannerURL: bannerURL || '',
       description,
       updatedAt: serverTimestamp()
     }, { merge: true });
