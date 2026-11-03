@@ -1,0 +1,72 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return signedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return signedIn() && request.auth.token.admin == true;
+    }
+
+    function published() {
+      return resource.data.get('published', false) == true;
+    }
+
+    match /products/{productId} {
+      allow read: if published() || isAdmin();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /categories/{categoryId} {
+      allow read: if published() || isAdmin();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /gallery/{imageId} {
+      allow read: if published() || isAdmin();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /announcements/{announcementId} {
+      allow read: if published() || isAdmin();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /profiles/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId)
+        && request.resource.data.keys().hasOnly([
+          'displayName', 'photoURL', 'bannerURL', 'description', 'createdAt', 'updatedAt'
+        ])
+        && request.resource.data.get('displayName', '') is string
+        && request.resource.data.get('description', '') is string
+        && request.resource.data.get('description', '').size() <= 300;
+      allow update: if isAdmin() || (isOwner(userId)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'displayName', 'photoURL', 'bannerURL', 'description', 'updatedAt'
+        ])
+        && request.resource.data.get('displayName', '') is string
+        && request.resource.data.get('description', '').size() <= 300);
+      allow delete: if isAdmin();
+
+      match /purchases/{purchaseId} {
+        allow read: if isOwner(userId) || isAdmin();
+        allow create, update, delete: if isAdmin();
+      }
+
+      match /balanceTransactions/{transactionId} {
+        allow read: if isOwner(userId) || isAdmin();
+        allow write: if false;
+      }
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

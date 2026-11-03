@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Panel administrativo · Make Up By Angelica Cardenas</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/estilos.css">
+</head>
+<body class="admin-page">
+  <header class="cabecera admin-header">
+    <div class="contenedor barra barra-admin">
+      <a class="marca notranslate" translate="no" href="/"><img class="logo-marca" src="assets/logo/ACV.png" alt=""><span class="marca-nombre">Make Up
+Angelica Cardenas</span></a>
+      <div class="acciones">
+        <a class="boton" href="/">Volver al sitio</a>
+        <button class="boton claro" type="button" data-admin-logout>Salir</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="contenedor admin-main">
+    <section class="admin-shell" data-admin-gate>
+      <div class="admin-guard" data-admin-guard>
+        <p class="sobrelinea">Acceso privado</p>
+        <h1>Panel administrativo</h1>
+        <p>Debes iniciar sesión con una cuenta autorizada y tener permisos de administrador para abrir este panel.</p>
+        <a class="boton" href="/">Ir al inicio</a>
+      </div>
+
+      <div class="admin-panel" data-admin-panel hidden>
+        <div class="admin-hero">
+          <div>
+            <p class="sobrelinea">Administración</p>
+            <h1>Control de clientes y contenido</h1>
+          </div>
+          <span class="admin-badge" data-admin-role>Invitado</span>
+        </div>
+
+        <div class="admin-grid">
+          <section class="admin-card">
+            <h2>Usuarios</h2>
+            <div class="admin-toolbar">
+              <button class="boton" type="button" data-refresh-users>Actualizar lista</button>
+            </div>
+            <div class="admin-list" data-users-list aria-live="polite"></div>
+          </section>
+
+          <section class="admin-card">
+            <h2>Insignias</h2>
+            <form data-badge-form class="admin-form">
+              <label>
+                Usuario
+                <select name="uid" data-user-select></select>
+              </label>
+              <label>
+                Insignia
+                <select name="badge">
+                  <option value="cliente">Cliente</option>
+                  <option value="vip">VIP</option>
+                  <option value="veterano">Veterano/a</option>
+                </select>
+              </label>
+              <label>
+                Motivo
+                <textarea name="reason" rows="3" required maxlength="300" placeholder="Ej.: compra confirmada, cliente VIP o antigüedad."></textarea>
+              </label>
+              <button class="boton" type="submit">Guardar insignia</button>
+            </form>
+          </section>
+
+          <section class="admin-card">
+            <h2>Saldo</h2>
+            <form data-balance-form class="admin-form">
+              <label>
+                Usuario
+                <select name="uid" data-user-select></select>
+              </label>
+              <label>
+                Monto (COP)
+                <input name="amountCop" type="number" step="1" required placeholder="150000">
+              </label>
+              <label>
+                Motivo
+                <textarea name="reason" rows="3" required maxlength="300" placeholder="Ej.: venta, devolución, recompensa."></textarea>
+              </label>
+              <button class="boton" type="submit">Ajustar saldo</button>
+            </form>
+          </section>
+
+          <section class="admin-card">
+            <h2>Compra</h2>
+            <form data-purchase-form class="admin-form">
+              <label>
+                Usuario
+                <select name="uid" data-user-select></select>
+              </label>
+              <label>
+                Referencia
+                <input name="reference" type="text" required maxlength="120" placeholder="CMP-2026-1001">
+              </label>
+              <label>
+                Total (COP)
+                <input name="totalCop" type="number" step="1" required placeholder="250000">
+              </label>
+              <label>
+                Artículos
+                <textarea name="items" rows="3" required maxlength="2000" placeholder='[{"name":"Base Atenea","quantity":1,"priceCop":70000}]'></textarea>
+              </label>
+              <button class="boton" type="submit">Registrar compra</button>
+            </form>
+          </section>
+        </div>
+
+        <p class="admin-status" data-admin-status role="status" aria-live="polite"></p>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="js/admin.js"></script>
+</body>
+</html>

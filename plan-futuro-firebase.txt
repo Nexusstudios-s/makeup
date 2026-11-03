@@ -20,6 +20,7 @@ FUTURA INTEGRACION CON FIREBASE
 - Agregar numero nuevo de cel si cambiamos
 
 INICIO DE SESION Y REGISTRO
+- crear dock tipo barra tareas redondeada linda donde ira esto, estilo liquid glass
 - Agregar un boton visible de Iniciar sesion.
 - Al pulsarlo, abrir un modal de inicio de sesion y registro.
 - Integrar autenticacion real de Firebase con Google, GitHub y correo electronico con contrasena.
@@ -27,7 +28,7 @@ INICIO DE SESION Y REGISTRO
 
 PERFILES DE CLIENTES
 - Permitir cambiar foto de perfil, banner y descripcion.
-- Mostrar compras del cliente y saldo asociado a movimientos reales.
+- Mostrar compras del cliente y saldo asociado a movimientos reales y poder cambiar la contrasena.
 - No mostrar ni modificar saldos ficticios. Registrar los cambios de saldo y limitar su gestion al personal autorizado.
 
 INSIGNIAS
