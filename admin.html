@@ -49,6 +49,97 @@ Angelica Cardenas</span></a>
           </section>
 
           <section class="admin-card admin-card-wide">
+            <h2>Reservas</h2>
+            <div class="admin-list" data-reservas-list aria-live="polite"></div>
+          </section>
+
+          <section class="admin-card admin-card-wide">
+            <h2>Notificación global</h2>
+            <form data-global-notify-form class="admin-form">
+              <label>
+                Título
+                <input name="title" type="text" required maxlength="80" placeholder="Nuevo lanzamiento">
+              </label>
+              <label>
+                Mensaje
+                <textarea name="message" rows="3" required maxlength="500" placeholder="Este aviso verá toda la web."></textarea>
+              </label>
+              <button class="boton" type="submit">Enviar a todos</button>
+            </form>
+          </section>
+
+          <section class="admin-card admin-card-wide">
+            <h2>Festividades</h2>
+            <form data-festivity-form class="admin-form">
+              <label>
+                Título
+                <input name="title" type="text" maxlength="80" placeholder="Navidad o Feria">
+              </label>
+              <label>
+                Imagen URL
+                <input name="imageUrl" type="url" maxlength="500" placeholder="https://..."></label>
+              <label>
+                O sube una imagen
+                <input name="imageFile" type="file" accept="image/*">
+              </label>
+              <label>
+                Posición X (%)
+                <input name="left" type="number" step="1" min="0" max="100" value="50">
+              </label>
+              <label>
+                Posición Y (%)
+                <input name="top" type="number" step="1" min="0" max="100" value="20">
+              </label>
+              <label>
+                Tamaño (%)
+                <input name="size" type="number" step="1" min="5" max="80" value="16">
+              </label>
+              <label>
+                Rotación (°)
+                <input name="rotate" type="number" step="1" min="-180" max="180" value="0">
+              </label>
+              <label>
+                Lugar del sitio
+                <select name="location">
+                  <option value="header">Cabecera</option>
+                  <option value="hero">Hero</option>
+                  <option value="page">Página libre</option>
+                  <option value="floating">Flotante</option>
+                </select>
+              </label>
+              <label class="admin-check">
+                <input name="published" type="checkbox" checked>
+                Publicada
+              </label>
+              <button class="boton" type="submit">Guardar decoración</button>
+            </form>
+            <div class="admin-list" data-festivities-list aria-live="polite"></div>
+          </section>
+
+          <section class="admin-card admin-card-wide">
+            <h2>Roles de soporte</h2>
+            <form data-role-form class="admin-form">
+              <label>
+                Usuario
+                <select name="uid" data-user-select></select>
+              </label>
+              <label>
+                Rol
+                <select name="role">
+                  <option value="support">Soporte</option>
+                  <option value="admin">Administrador</option>
+                </select>
+              </label>
+              <button class="boton" type="submit">Guardar rol</button>
+            </form>
+          </section>
+
+          <section class="admin-card admin-card-wide">
+            <h2>Mensajes de soporte</h2>
+            <div class="admin-list" data-support-chats-list aria-live="polite"></div>
+          </section>
+
+          <section class="admin-card admin-card-wide">
             <h2>Productos</h2>
             <form data-product-form class="admin-form">
               <label>

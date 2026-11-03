@@ -63,6 +63,30 @@ service cloud.firestore {
         allow read: if isOwner(userId) || isAdmin();
         allow write: if false;
       }
+
+      match /notifications/{notificationId} {
+        allow read: if isOwner(userId) || isAdmin();
+        allow create, update, delete: if isAdmin();
+      }
+    }
+
+    match /reservas/{reservaId} {
+      allow read: if signedIn() && (isAdmin() || request.auth.uid == resource.data.userId);
+      allow create: if signedIn()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.status == 'pendiente';
+      allow update: if isAdmin() || (signedIn() && request.auth.uid == resource.data.userId);
+      allow delete: if isAdmin();
+    }
+
+    match /globalNotifications/{notificationId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /notifications/{userId}/items/{notificationId} {
+      allow read: if signedIn() && (isAdmin() || request.auth.uid == userId);
+      allow create, update, delete: if isAdmin();
     }
 
     match /{document=**} {

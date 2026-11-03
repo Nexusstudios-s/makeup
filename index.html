@@ -151,7 +151,10 @@
 <textarea name="mensaje" rows="3" maxlength="400" placeholder="Cuéntanos sobre la ocasión o el look que tienes en mente"></textarea>
 </label>
 <p class="reserva-aviso">La fecha y hora son preferencias, no una confirmación de reserva.</p>
-<button class="boton reserva-enviar" type="submit">Solicitar cita por WhatsApp</button>
+<div class="reserva-botones">
+  <button class="boton reserva-enviar" type="submit">Solicitar por WhatsApp</button>
+  <button class="boton claro reserva-modal-btn" type="button" data-reserva-modal>Pedido desde aquí</button>
+</div>
 </form>
 </section>
 
@@ -220,6 +223,7 @@
 <script src="js/tema.js"></script>
 <script src="js/festividades.js"></script>
 <script src="js/traductor.js"></script>
+<script type="module" src="js/reservas.js"></script>
 <script type="module" src="js/firebase-auth.js"></script>
 <script src="https://translate.google.com/translate_a/element.js?cb=iniciarTraductor"></script>
 </body>
