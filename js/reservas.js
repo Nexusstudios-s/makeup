@@ -1,4 +1,4 @@
-import { addDoc, collection, doc, getDocs, onSnapshot, orderBy, query, serverTimestamp, updateDoc, where } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js';
+import { addDoc, collection, deleteDoc, doc, getDocs, onSnapshot, orderBy, query, serverTimestamp, updateDoc, where } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js';
 import { auth, db } from './firebase-client.js';
 
 const CAMPANA = `
@@ -38,6 +38,65 @@ const NOTIFICACIONES_HTML = `
   </div>
 `;
 
+function mostrarDialogoPremium({
+  title = 'Atención',
+  message = '',
+  confirmText = 'Aceptar',
+  cancelText = '',
+  onConfirm = null,
+  onCancel = null
+} = {}) {
+  const dialog = document.createElement('dialog');
+  dialog.className = 'dialogo-premium';
+  dialog.innerHTML = `
+    <div class="dialogo-premium__contenido">
+      <div class="dialogo-premium__header">
+        <span class="dialogo-premium__eyebrow">Aviso</span>
+        <button class="x" type="button" aria-label="Cerrar">×</button>
+      </div>
+      <h3>${title}</h3>
+      <p>${message}</p>
+      <div class="dialogo-premium__acciones">
+        ${cancelText ? '<button class="boton claro" type="button" data-dialog-cancel>' + cancelText + '</button>' : ''}
+        <button class="boton" type="button" data-dialog-confirm>${confirmText}</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(dialog);
+
+  const cerrar = () => {
+    dialog.close();
+    dialog.remove();
+  };
+
+  dialog.querySelector('.x').addEventListener('click', () => {
+    onCancel?.();
+    cerrar();
+  });
+
+  dialog.addEventListener('click', (event) => {
+    if (event.target === dialog) {
+      onCancel?.();
+      cerrar();
+    }
+  });
+
+  if (cancelText) {
+    dialog.querySelector('[data-dialog-cancel]').addEventListener('click', () => {
+      onCancel?.();
+      cerrar();
+    });
+  }
+
+  dialog.querySelector('[data-dialog-confirm]').addEventListener('click', () => {
+    onConfirm?.();
+    cerrar();
+  });
+
+  dialog.showModal();
+}
+
 function setMinDate(selector) {
   const hoy = new Date();
   hoy.setMinutes(hoy.getMinutes() - hoy.getTimezoneOffset());
@@ -63,7 +122,11 @@ function abrirModalReserva() {
     evento.preventDefault();
     const usuario = auth.currentUser;
     if (!usuario) {
-      alert('Primero inicia sesión para enviar tu solicitud de reserva.');
+      mostrarDialogoPremium({
+        title: 'Inicia sesión para continuar',
+        message: 'Necesitas entrar a tu cuenta antes de enviar una solicitud de reserva.',
+        confirmText: 'Entendido'
+      });
       return;
     }
     const formulario = evento.currentTarget;
@@ -84,7 +147,11 @@ function abrirModalReserva() {
     await addDoc(collection(db, 'reservas'), reserva);
     formulario.reset();
     nuevoModal.close();
-    alert('Tu solicitud de reserva fue enviada. El equipo la revisará y te responderá por WhatsApp o correo.');
+    mostrarDialogoPremium({
+      title: 'Solicitud enviada',
+      message: 'Tu cita quedó registrada. El equipo la revisará y te responderá por WhatsApp o correo.',
+      confirmText: 'Perfecto'
+    });
   });
   nuevoModal.showModal();
 }
@@ -115,12 +182,47 @@ function renderNotificaciones(lista, panel) {
   const maxCount = 5;
   const items = lista.slice(0, maxCount).map(notif => `
     <article class="notificacion-item ${notif.read ? 'leida' : 'nueva'}">
-      <strong>${notif.title || 'Actualización'}</strong>
-      <p>${notif.message || ''}</p>
-      <small>${notif.createdAt?.toDate ? notif.createdAt.toDate().toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' }) : 'Ahora'}</small>
+      <div class="notificacion-item-contenido">
+        <strong>${notif.title || 'Actualización'}</strong>
+        <p>${notif.message || ''}</p>
+        <small>${notif.createdAt?.toDate ? notif.createdAt.toDate().toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' }) : 'Ahora'}</small>
+      </div>
+      <button class="boton claro notificacion-eliminar" type="button" data-delete-notification="${notif.id}" data-notification-scope="${notif.forAll ? 'global' : 'personal'}">Borrar</button>
     </article>
   `).join('');
   contenedor.innerHTML = items;
+
+  contenedor.querySelectorAll('[data-delete-notification]').forEach(boton => {
+    boton.addEventListener('click', async () => {
+      const notifId = boton.dataset.deleteNotification;
+      const scope = boton.dataset.notificationScope;
+      const usuario = auth.currentUser;
+      if (!usuario || !notifId) return;
+
+      const token = await usuario.getIdTokenResult().catch(() => null);
+      const email = (usuario.email || '').trim().toLowerCase();
+      const esAdmin = Boolean(token?.claims?.admin || token?.claims?.support || ['angelicacb05@gmail.com', 'santhiagocaro05@gmail.com'].includes(email));
+
+      if (scope === 'global' && !esAdmin) {
+        mostrarDialogoPremium({
+          title: 'Permiso requerido',
+          message: 'Solo el administrador puede borrar las notificaciones globales.',
+          confirmText: 'Vale'
+        });
+        return;
+      }
+
+      try {
+        if (scope === 'global') {
+          await deleteDoc(doc(db, 'globalNotifications', notifId));
+        } else {
+          await deleteDoc(doc(db, 'profiles', usuario.uid, 'notifications', notifId));
+        }
+      } catch (error) {
+        console.error('No se pudo borrar la notificación:', error);
+      }
+    });
+  });
 }
 
 function analizarListaGlobal(lista, usuario) {

@@ -317,6 +317,49 @@ function esCuentaSoporte(email) {
   return typeof email === 'string' && SUPPORT_EMAILS.includes(email.trim().toLowerCase());
 }
 
+function escaparHTML(valor) {
+  return String(valor ?? '').replace(/[&<>"']/g, caracter => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  })[caracter]);
+}
+
+function insigniaChat(rol) {
+  if (rol === 'admin') {
+    return '<span class="chat-insignia chat-insignia-admin" title="Administración" aria-label="Administración"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 18 2-11 5 5 2-8 2 8 5-5 2 11H3Zm1 3h16"/><path d="m4 7 1-3 3 2m12 1-1-3-3 2"/></svg></span>';
+  }
+  if (rol === 'support') {
+    return '<span class="chat-insignia chat-insignia-support" title="Soporte verificado" aria-label="Soporte verificado"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 20 5v6c0 5-3.4 8.6-8 11-4.6-2.4-8-6-8-11V5l8-3Z"/><path d="m8.5 12 2.2 2.2 4.8-5"/></svg></span>';
+  }
+  return '';
+}
+
+async function rolChatUsuario(usuario) {
+  if (!usuario) return 'client';
+  try {
+    const token = await usuario.getIdTokenResult();
+    if (token.claims.admin === true || SUPPORT_EMAILS.includes((usuario.email || '').trim().toLowerCase())) return 'admin';
+    if (token.claims.support === true) return 'support';
+    const perfil = await getDoc(doc(db, 'profiles', usuario.uid));
+    if (perfil.data()?.roles?.admin) return 'admin';
+    if (perfil.data()?.roles?.support) return 'support';
+  } catch (error) {
+    console.info('No se pudo consultar el rol del chat.', error.code || error.message);
+  }
+  return 'client';
+}
+
+function renderMensajeChat(mensaje, nombreCliente) {
+  const rol = mensaje.sender === 'support' && ['admin', 'support'].includes(mensaje.role)
+    ? mensaje.role
+    : (mensaje.sender === 'support' ? 'support' : 'client');
+  const nombre = rol === 'admin' ? 'Administración' : rol === 'support' ? 'Soporte' : nombreCliente;
+  return `
+    <article class="support-message ${rol !== 'client' ? 'support-message-agent' : 'support-message-client'}">
+      <div class="support-message-meta"><strong>${escaparHTML(nombre)}</strong>${insigniaChat(rol)}</div>
+      <p>${escaparHTML(mensaje.text || '')}</p>
+    </article>`;
+}
+
 async function obtenerChatSoporte(usuario) {
   const chatId = usuario.uid;
   const ref = doc(db, 'supportChats', chatId);
@@ -341,7 +384,7 @@ async function renderChatSoporte() {
   const threadList = supportModal.querySelector('[data-support-thread-list]');
   const form = supportModal.querySelector('[data-support-form]');
   if (!usuarioActual) {
-    list.innerHTML = '<p>Inicia sesión para escribir a soporte.</p>';
+    list.innerHTML = '<p class="support-empty">Inicia sesión para escribir a soporte.</p>';
     threadList.innerHTML = '';
     form.hidden = true;
     supportFeedback.textContent = 'Inicia sesión para usar el chat.';
@@ -352,24 +395,21 @@ async function renderChatSoporte() {
   form.hidden = false;
   const mensajesSnap = await getDocs(collection(db, 'supportChats', chatId, 'messages'));
   const mensajes = mensajesSnap.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() })).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+  const miRol = await rolChatUsuario(usuarioActual);
 
   if (mensajes.length === 0) {
-    list.innerHTML = '<p>Aún no hay mensajes en este chat.</p>';
+    list.innerHTML = '<p class="support-empty">Aún no hay mensajes. Cuéntanos cómo podemos ayudarte.</p>';
   } else {
-    list.innerHTML = mensajes.map(mensaje => `
-      <article class="support-message ${mensaje.sender === 'support' ? 'support-message-admin' : ''}">
-        <strong>${mensaje.sender === 'support' ? 'Soporte' : (usuarioActual.displayName || 'Tú')}</strong>
-        <p>${(mensaje.text || '').replace(/</g, '&lt;')}</p>
-      </article>
-    `).join('');
+    list.innerHTML = mensajes.map(mensaje => renderMensajeChat(mensaje, usuarioActual.displayName || 'Tú')).join('');
   }
+  list.scrollTop = list.scrollHeight;
 
-  if (esCuentaSoporte(usuarioActual.email)) {
+  if (miRol !== 'client') {
     const chatsSnap = await getDocs(collection(db, 'supportChats'));
     const chats = chatsSnap.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
     threadList.innerHTML = chats.length
-      ? chats.map(chat => `<button type="button" class="support-thread" data-support-thread="${chat.id}">${chat.userName || chat.userEmail || 'Cliente'} · ${chat.status || 'abierto'}</button>`).join('')
-      : '<p>No hay chats activos.</p>';
+      ? chats.map(chat => `<button type="button" class="support-thread" data-support-thread="${escaparHTML(chat.id)}"><span class="support-thread-avatar">${escaparHTML((chat.userName || chat.userEmail || 'C').slice(0, 1).toUpperCase())}</span><span class="support-thread-info"><strong>${escaparHTML(chat.userName || chat.userEmail || 'Cliente')}</strong><small>${escaparHTML(chat.lastMessage || 'Conversación nueva')}</small></span><span class="admin-tag">${escaparHTML(chat.status || 'abierto')}</span></button>`).join('')
+      : '<p class="support-empty">No hay conversaciones activas.</p>';
     threadList.querySelectorAll('[data-support-thread]').forEach(boton => {
       boton.addEventListener('click', async () => {
         const threadId = boton.dataset.supportThread;
@@ -379,13 +419,9 @@ async function renderChatSoporte() {
         const mensajesSnap2 = await getDocs(collection(db, 'supportChats', threadId, 'messages'));
         const mensajes2 = mensajesSnap2.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() })).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
         list.innerHTML = mensajes2.length
-          ? mensajes2.map(mensaje => `
-            <article class="support-message ${mensaje.sender === 'support' ? 'support-message-admin' : ''}">
-              <strong>${mensaje.sender === 'support' ? 'Soporte' : (destino.userName || 'Cliente')}</strong>
-              <p>${(mensaje.text || '').replace(/</g, '&lt;')}</p>
-            </article>
-          `).join('')
-          : '<p>Todavía no hay mensajes para este cliente.</p>';
+          ? mensajes2.map(mensaje => renderMensajeChat(mensaje, destino.userName || 'Cliente')).join('')
+          : '<p class="support-empty">Todavía no hay mensajes para este cliente.</p>';
+        list.scrollTop = list.scrollHeight;
         form.dataset.supportThreadId = threadId;
         supportFeedback.textContent = `Responder a ${destino.userName || destino.userEmail || 'este cliente'}.`;
       });
@@ -395,7 +431,7 @@ async function renderChatSoporte() {
       supportFeedback.textContent = `Responder a ${chats[0].userName || chats[0].userEmail || 'este cliente'}.`;
     }
   } else {
-    threadList.innerHTML = '<p>Tu chat con soporte se guarda como conversación privada.</p>';
+    threadList.innerHTML = '<p class="support-private-note">Tu conversación privada con el equipo</p>';
     form.dataset.supportThreadId = chatId;
   }
 
@@ -405,9 +441,11 @@ async function renderChatSoporte() {
     const text = textarea.value.trim();
     if (!text) return;
     const threadId = form.dataset.supportThreadId || chatId;
-    const sender = esCuentaSoporte(usuarioActual.email) ? 'support' : 'client';
+    const role = miRol;
+    const sender = role === 'client' ? 'client' : 'support';
     await addDoc(collection(db, 'supportChats', threadId, 'messages'), {
       sender,
+      role,
       text,
       createdAt: Date.now(),
       createdBy: usuarioActual.uid

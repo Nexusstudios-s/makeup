@@ -245,3 +245,5 @@ const PRODUCTOS = [
     detalles: ['Aplicación con brocha', 'Consulta disponibilidad']
   }
 ];
+
+window.catalogoLocal = { categorias: CATEGORIAS, productos: PRODUCTOS };

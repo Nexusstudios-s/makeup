@@ -1,7 +1,7 @@
 const parametros = new URLSearchParams(location.search);
 const clave = parametros.get('c');
 const abrirId = parametros.get('p');
-const categoria = CATEGORIAS[clave];
+let categoria = CATEGORIAS[clave];
 
 const encabezado = document.querySelector('.encabezado-cat');
 const rejilla = document.querySelector('.productos');
@@ -36,7 +36,8 @@ function pintar() {
 }
 
 function abrirDetalle(producto) {
-  const colores = CATEGORIAS[producto.categoria].colores;
+  if (!producto) return;
+  const colores = CATEGORIAS[producto.categoria]?.colores || ['#e7d7d2', '#cdb5ad'];
   const tonos = producto.tonos || [];
   let tono = tonos.length ? tonos[0].n : '';
 
@@ -91,11 +92,14 @@ function abrirDetalle(producto) {
   dialogo.showModal();
 }
 
-if (!categoria) {
-  document.querySelector('.chips').remove();
-  document.querySelector('.barra-filtros').remove();
-  encabezado.innerHTML = '<div><h1>Categoría no encontrada</h1><p class="intro">Elige una de nuestras categorías desde el inicio.</p><a class="boton" href="/#categorias">Ver categorías</a></div>';
-} else {
+function renderizarCategoria() {
+  categoria = CATEGORIAS[clave];
+  if (!categoria) {
+    document.querySelector('.chips').innerHTML = '';
+    encabezado.innerHTML = '<div><h1>Cargando categoría…</h1><p class="intro">Estamos buscando los productos publicados.</p><a class="boton" href="/#categorias">Ver categorías</a></div>';
+    rejilla.innerHTML = '';
+    return;
+  }
   document.title = `${categoria.titulo} · ${MARCA_COMPLETA}`;
   encabezado.style.setProperty('--a', categoria.colores[0]);
   encabezado.style.setProperty('--b', categoria.colores[1]);
@@ -107,33 +111,23 @@ if (!categoria) {
     .map(([k, c]) => `<a class="chip${k === clave ? ' activo' : ''}" href="/categoria?c=${k}">${c.titulo}</a>`)
     .join('');
 
-  buscador.addEventListener('input', pintar);
-  selector.addEventListener('change', pintar);
-
-  rejilla.addEventListener('click', e => {
-    const tarjeta = e.target.closest('[data-id]');
-    if (!tarjeta) return;
-    e.preventDefault();
-    abrirDetalle(PRODUCTOS.find(p => p.id === tarjeta.dataset.id));
-  });
-
   pintar();
 
   const pedido = PRODUCTOS.find(p => p.id === abrirId);
   if (pedido) abrirDetalle(pedido);
 }
 
+buscador.addEventListener('input', pintar);
+selector.addEventListener('change', pintar);
+rejilla.addEventListener('click', e => {
+  const tarjeta = e.target.closest('[data-id]');
+  if (!tarjeta) return;
+  e.preventDefault();
+  abrirDetalle(PRODUCTOS.find(p => p.id === tarjeta.dataset.id));
+});
+
+renderizarCategoria();
+
 window.actualizarCatalogoFirebase = () => {
-  const categoriaActual = CATEGORIAS[clave];
-  if (!categoriaActual || categoriaActual.publicado === false) return;
-  document.title = `${categoriaActual.titulo} · ${MARCA_COMPLETA}`;
-  encabezado.style.setProperty('--a', categoriaActual.colores[0]);
-  encabezado.style.setProperty('--b', categoriaActual.colores[1]);
-  encabezado.querySelector('h1').textContent = categoriaActual.titulo;
-  encabezado.querySelector('.intro').textContent = categoriaActual.texto;
-  document.querySelector('.chips').innerHTML = Object.entries(CATEGORIAS)
-    .filter(([, cat]) => cat.publicado !== false)
-    .map(([k, cat]) => `<a class="chip${k === clave ? ' activo' : ''}" href="/categoria?c=${k}">${cat.titulo}</a>`)
-    .join('');
-  pintar();
+  renderizarCategoria();
 };

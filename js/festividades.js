@@ -9,19 +9,27 @@
       const snap = await getDocs(query(collection(db, 'festivities'), where('published', '==', true)));
       const items = snap.docs.map(documento => ({ id: documento.id, ...documento.data() }));
       if (!items.length) return;
+      const path = location.pathname.split('/').pop();
+      const page = !path || path === 'index.html' ? 'index.html' : (path.endsWith('.html') ? path : `${path}.html`);
       items.forEach(item => {
-        const contenedor = document.querySelector(item.location === 'header' ? '.cabecera' : item.location === 'hero' ? '.hero, .hero-banner, .portada-principal' : 'body');
+        if (Array.isArray(item.pages) && item.pages.length && !item.pages.includes('all') && !item.pages.includes(page)) return;
+        const contenedor = item.location === 'header'
+          ? document.querySelector('.cabecera')
+          : item.location === 'hero'
+            ? document.querySelector('[data-festive-hero], .pagina-hero, .encabezado-cat, .carrusel, .hero, .hero-banner, .portada-principal') || document.querySelector('main') || document.body
+            : document.body;
         if (!contenedor) return;
+        if (item.location !== 'floating' && getComputedStyle(contenedor).position === 'static') contenedor.style.position = 'relative';
         const decoracion = document.createElement('img');
         decoracion.src = item.imageUrl || '';
         decoracion.alt = item.title || 'Decoración';
         decoracion.className = 'decoracion-festiva';
-        decoracion.style.position = item.location === 'floating' || item.location === 'page' ? 'fixed' : 'absolute';
+        decoracion.style.position = item.location === 'floating' ? 'fixed' : 'absolute';
         decoracion.style.left = `${item.left ?? 50}%`;
         decoracion.style.top = `${item.top ?? 20}%`;
         decoracion.style.width = `${item.size ?? 16}%`;
         decoracion.style.transform = `rotate(${item.rotate ?? 0}deg)`;
-        decoracion.style.zIndex = item.location === 'header' ? '2' : '15';
+        decoracion.style.zIndex = item.location === 'header' ? '4' : '15';
         decoracion.style.pointerEvents = 'none';
         contenedor.appendChild(decoracion);
       });

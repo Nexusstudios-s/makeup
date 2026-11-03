@@ -1,4 +1,4 @@
-import { collection, getDocs, query, where } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js';
+import { collection, doc, getDoc, getDocs, query, where } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js';
 import { db } from './firebase-client.js';
 
 async function leerPublicados(nombre) {
@@ -40,17 +40,27 @@ function mostrarAnuncio(anuncios) {
 
 async function cargarContenidoPublicado() {
   try {
-    const [productos, categorias, anuncios] = await Promise.all([
+    const [productos, categorias, anuncios, carouselSlides, examples, visibilitySnap, saleTermsSnap, legalTermsSnap] = await Promise.all([
       leerPublicados('products'),
       leerPublicados('categories'),
-      leerPublicados('announcements')
+      leerPublicados('announcements'),
+      leerPublicados('carouselSlides'),
+      leerPublicados('examples'),
+      getDoc(doc(db, 'siteSettings', 'visibility')),
+      getDoc(doc(db, 'legalPages', 'sale')),
+      getDoc(doc(db, 'legalPages', 'terms'))
     ]);
-    if ((productos.length || categorias.length) && window.aplicarContenidoFirebase) {
-      window.aplicarContenidoFirebase({ productos, categorias });
-    }
+    const visibility = visibilitySnap.exists() ? visibilitySnap.data() : {};
+    const legalPages = {
+      sale: saleTermsSnap.exists() ? saleTermsSnap.data() : null,
+      terms: legalTermsSnap.exists() ? legalTermsSnap.data() : null
+    };
+    window.aplicarContenidoFirebase?.({ productos, categorias, carouselSlides, visibility, examples, legalPages });
     mostrarAnuncio(anuncios);
   } catch (error) {
     console.info('El contenido Firebase todavía no está disponible; se conserva el catálogo local.', error.code || error.message);
+  } finally {
+    document.querySelector('.carrusel')?.classList.remove('carrusel-esperando');
   }
 }
 

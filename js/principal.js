@@ -7,6 +7,7 @@ const ICONOS = {
 };
 
 const enlaceWhatsApp = texto => `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(texto)}`;
+const PRODUCTOS_LOCALES = PRODUCTOS.slice();
 
 const formatoPrecio = valor => {
   if (!Number.isFinite(valor)) return 'Consultar precio';
@@ -29,7 +30,7 @@ function ocultarImagenesRotas(raiz = document) {
 }
 
 function tarjetaProducto(producto, i = 0) {
-  const categoria = CATEGORIAS[producto.categoria];
+  const categoria = CATEGORIAS[producto.categoria] || { colores: ['#e7d7d2', '#cdb5ad'] };
   const tonos = producto.tonos || [];
   const muestras = tonos.slice(0, 5)
     .map(t => `<span class="muestra" style="--c:${t.c}" title="${t.n}"></span>`).join('');
@@ -175,16 +176,80 @@ function iniciarDestacados() {
   zona.innerHTML = PRODUCTOS.filter(p => p.destacado).slice(0, 4).map(tarjetaProducto).join('');
 }
 
-window.catalogoLocal = { categorias: CATEGORIAS, productos: PRODUCTOS };
-window.aplicarContenidoFirebase = ({ categorias = [], productos = [] }) => {
+function crearSlideFirebase(item, indice) {
+  const slide = document.createElement('div');
+  slide.className = `slide s${indice % 3 + 1}`;
+  slide.dataset.carouselCustom = 'true';
+  const imagen = document.createElement('img');
+  imagen.src = item.imageUrl || '';
+  imagen.alt = item.title || 'Novedad';
+  slide.append(imagen);
+
+  const texto = document.createElement('div');
+  texto.className = 'texto';
+  const titular = document.createElement('p');
+  titular.className = 'titular';
+  String(item.title || 'Novedad').split(/\n+/).slice(0, 3).forEach(linea => {
+    const span = document.createElement('span');
+    span.textContent = linea;
+    titular.append(span);
+  });
+  const cuerpo = document.createElement('p');
+  cuerpo.className = 'sub';
+  cuerpo.textContent = item.body || '';
+  texto.append(titular, cuerpo);
+
+  if (typeof item.link === 'string' && (item.link.startsWith('/') || /^https:\/\//i.test(item.link))) {
+    const enlace = document.createElement('a');
+    enlace.className = 'boton claro';
+    enlace.href = item.link;
+    enlace.textContent = item.linkLabel || 'Ver más';
+    texto.append(enlace);
+  }
+  slide.append(texto);
+  return slide;
+}
+
+window.aplicarCarruselFirebase = (slides = [], hiddenLocalSlides = []) => {
+  const carrusel = document.querySelector('.carrusel');
+  if (!carrusel) return;
+  const ocultas = new Set(hiddenLocalSlides);
+  carrusel.querySelectorAll('.slide[data-slide-id]').forEach(slide => {
+    slide.hidden = ocultas.has(slide.dataset.slideId);
+  });
+  carrusel.querySelectorAll('[data-carousel-custom]').forEach(slide => slide.remove());
+  const puntos = carrusel.querySelector('.puntos');
+  slides.forEach((slide, index) => puntos.before(crearSlideFirebase(slide, index)));
+  iniciarCarrusel();
+};
+
+window.catalogoLocal = { categorias: CATEGORIAS, productos: PRODUCTOS_LOCALES };
+window.aplicarContenidoFirebase = ({ categorias = [], productos = [], visibility = {}, carouselSlides = [], examples = [], legalPages = {} }) => {
+  const ocultosLocal = new Set(visibility.hiddenLocalProducts || []);
+  window.__visibilidadSitio = {
+    hiddenLocalProducts: [...ocultosLocal],
+    hiddenLocalSlides: visibility.hiddenLocalSlides || [],
+    hiddenLocalExamples: visibility.hiddenLocalExamples || []
+  };
+
   categorias.forEach(categoria => {
-    if (!categoria.id || !CATEGORIAS[categoria.id]) return;
-    Object.assign(CATEGORIAS[categoria.id], categoria);
+    if (!categoria.id) return;
+    CATEGORIAS[categoria.id] = {
+      titulo: categoria.titulo || categoria.id,
+      texto: categoria.texto || '',
+      imagen: categoria.imagen || '',
+      colores: Array.isArray(categoria.colores) && categoria.colores.length >= 2 ? categoria.colores : ['#e7d7d2', '#cdb5ad'],
+      ...CATEGORIAS[categoria.id],
+      ...categoria
+    };
   });
 
-  if (productos.length) {
-    PRODUCTOS.splice(0, PRODUCTOS.length, ...productos);
-  }
+  const idsFirebase = new Set(productos.map(producto => producto.id));
+  const productosVisibles = [
+    ...PRODUCTOS_LOCALES.filter(producto => !ocultosLocal.has(producto.id) && !idsFirebase.has(producto.id)),
+    ...productos
+  ];
+  PRODUCTOS.splice(0, PRODUCTOS.length, ...productosVisibles);
 
   iniciarCategorias();
   iniciarDestacados();
@@ -194,6 +259,9 @@ window.aplicarContenidoFirebase = ({ categorias = [], productos = [] }) => {
     .filter(([, cat]) => cat.publicado !== false)
     .map(([clave, cat]) => `<a href="/categoria?c=${clave}">${cat.titulo}</a>`).join('');
   window.actualizarCatalogoFirebase?.();
+  window.aplicarCarruselFirebase?.(carouselSlides, visibility.hiddenLocalSlides || []);
+  window.aplicarGaleriaFirebase?.({ examples, hiddenLocalExamples: visibility.hiddenLocalExamples || [] });
+  window.aplicarPaginasLegalesFirebase?.(legalPages);
 };
 
 function iniciarAparicion() {
@@ -214,19 +282,23 @@ function iniciarAparicion() {
   });
 }
 
+let detenerFiltrosGaleria = null;
+
 function iniciarFiltrosGaleria() {
+  detenerFiltrosGaleria?.();
   const galeria = document.querySelector('.galeria-pagina');
   const botones = [...document.querySelectorAll('[data-filtro-galeria]')];
   const resultado = document.querySelector('[data-galeria-resultado]');
   if (!galeria || !botones.length || !resultado) return;
 
   const tarjetas = [...galeria.querySelectorAll('.look')];
+  const eventos = new AbortController();
   const cuidadoFacial = /medicube|anua|mixsoon|celimax|skin1004|beauty of joseon|tocobo/i;
   const categorias = new Map(tarjetas.map(tarjeta => {
     const imagen = tarjeta.querySelector('img');
     const ruta = imagen.getAttribute('src');
     const texto = `${tarjeta.querySelector('.look-titulo').textContent} ${tarjeta.dataset.galeriaDetalle} ${imagen.alt}`;
-    const asignadas = new Set();
+    const asignadas = new Set((tarjeta.dataset.galeriaCategoria || '').split(/\s+/).filter(Boolean));
 
     if (ruta.startsWith('media/looks/') || ruta.startsWith('media/Local/')) asignadas.add('looks');
     if (ruta.startsWith('media/productos/') || ruta.startsWith('media/carrusel/')) asignadas.add('productos');
@@ -244,7 +316,7 @@ function iniciarFiltrosGaleria() {
   function filtrar(filtro) {
     let visibles = 0;
     tarjetas.forEach(tarjeta => {
-      const mostrar = filtro === 'todos' || categorias.get(tarjeta).has(filtro);
+      const mostrar = tarjeta.dataset.ocultoAdmin !== 'true' && (filtro === 'todos' || categorias.get(tarjeta).has(filtro));
       tarjeta.hidden = !mostrar;
       if (mostrar) visibles += 1;
     });
@@ -259,31 +331,42 @@ function iniciarFiltrosGaleria() {
 
   botones.forEach(boton => {
     const filtro = boton.dataset.filtroGaleria;
+    const disponibles = tarjetas.filter(tarjeta => tarjeta.dataset.ocultoAdmin !== 'true');
     const cantidad = filtro === 'todos'
-      ? tarjetas.length
-      : tarjetas.filter(tarjeta => categorias.get(tarjeta).has(filtro)).length;
+      ? disponibles.length
+      : disponibles.filter(tarjeta => categorias.get(tarjeta).has(filtro)).length;
     boton.querySelector('[data-filtro-conteo]').textContent = cantidad;
-    boton.addEventListener('click', () => filtrar(filtro));
+    boton.addEventListener('click', () => filtrar(filtro), { signal: eventos.signal });
   });
 
-  filtrar('todos');
+  const activo = botones.find(boton => boton.getAttribute('aria-pressed') === 'true')?.dataset.filtroGaleria || 'todos';
+  filtrar(activo);
+  detenerFiltrosGaleria = () => eventos.abort();
 }
 
-function iniciarGaleria() {
-  const tarjetas = [...document.querySelectorAll('.look[data-galeria-detalle]')];
-  const dialogo = document.querySelector('.galeria-detalle');
-  if (!tarjetas.length || !dialogo) return;
+let detenerGaleria = null;
 
+function iniciarGaleria() {
+  detenerGaleria?.();
+  const galeria = document.querySelector('.galeria-pagina');
+  const dialogo = document.querySelector('.galeria-detalle');
+  if (!galeria || !dialogo) return;
+
+  const eventos = new AbortController();
+  const { signal } = eventos;
   const imagen = dialogo.querySelector('.galeria-imagen');
   const video = dialogo.querySelector('.galeria-video');
   const titulo = dialogo.querySelector('.galeria-titulo');
   const texto = dialogo.querySelector('.galeria-texto');
   const contador = dialogo.querySelector('.galeria-contador');
   let actual = 0;
+  const tarjetas = () => [...galeria.querySelectorAll('.look[data-galeria-detalle]:not([hidden])')];
 
   function mostrar(indice) {
-    actual = (indice + tarjetas.length) % tarjetas.length;
-    const tarjeta = tarjetas[actual];
+    const visibles = tarjetas();
+    if (!visibles.length) return;
+    actual = (indice + visibles.length) % visibles.length;
+    const tarjeta = visibles[actual];
     const foto = tarjeta.querySelector('img');
     const fuenteVideo = tarjeta.dataset.video;
 
@@ -303,79 +386,174 @@ function iniciarGaleria() {
 
     titulo.textContent = tarjeta.querySelector('.look-titulo').textContent;
     texto.textContent = tarjeta.dataset.galeriaDetalle;
-    contador.textContent = `${actual + 1} / ${tarjetas.length}`;
+    contador.textContent = `${actual + 1} / ${visibles.length}`;
   }
 
-  tarjetas.forEach((tarjeta, indice) => {
-    tarjeta.addEventListener('click', () => {
-      mostrar(indice);
-      dialogo.showModal();
-    });
-    tarjeta.addEventListener('pointerenter', () => {
-      if (!tarjeta.dataset.video || !matchMedia('(hover: hover)').matches) return;
-      let vistaPrevia = tarjeta.querySelector('.look-preview');
-      if (!vistaPrevia) {
-        vistaPrevia = document.createElement('video');
-        vistaPrevia.className = 'look-preview';
-        vistaPrevia.muted = true;
-        vistaPrevia.loop = true;
-        vistaPrevia.playsInline = true;
-        tarjeta.prepend(vistaPrevia);
-      }
-      vistaPrevia.src = tarjeta.dataset.video;
-      vistaPrevia.play().catch(() => {});
-    });
-    tarjeta.addEventListener('pointerleave', () => {
-      const vistaPrevia = tarjeta.querySelector('.look-preview');
-      if (vistaPrevia) vistaPrevia.pause();
-    });
-  });
+  galeria.addEventListener('click', event => {
+    const tarjeta = event.target.closest('.look[data-galeria-detalle]');
+    if (!tarjeta || tarjeta.hidden || tarjeta.dataset.ocultoAdmin === 'true') return;
+    const indice = tarjetas().indexOf(tarjeta);
+    if (indice < 0) return;
+    mostrar(indice);
+    dialogo.showModal();
+  }, { signal });
+  galeria.addEventListener('pointerover', event => {
+    const tarjeta = event.target.closest('.look[data-video]');
+    if (!tarjeta || !matchMedia('(hover: hover)').matches) return;
+    let vistaPrevia = tarjeta.querySelector('.look-preview');
+    if (!vistaPrevia) {
+      vistaPrevia = document.createElement('video');
+      vistaPrevia.className = 'look-preview';
+      vistaPrevia.muted = true;
+      vistaPrevia.loop = true;
+      vistaPrevia.playsInline = true;
+      tarjeta.prepend(vistaPrevia);
+    }
+    vistaPrevia.src = tarjeta.dataset.video;
+    vistaPrevia.play().catch(() => {});
+  }, { signal });
+  galeria.addEventListener('pointerout', event => {
+    const tarjeta = event.target.closest('.look[data-video]');
+    if (tarjeta && !tarjeta.contains(event.relatedTarget)) tarjeta.querySelector('.look-preview')?.pause();
+  }, { signal });
 
-  dialogo.querySelector('.x').addEventListener('click', () => dialogo.close());
-  dialogo.querySelector('.galeria-anterior').addEventListener('click', () => mostrar(actual - 1));
-  dialogo.querySelector('.galeria-siguiente').addEventListener('click', () => mostrar(actual + 1));
-  dialogo.addEventListener('click', e => {
-    if (e.target === dialogo) dialogo.close();
-  });
-  dialogo.addEventListener('keydown', e => {
-    if (e.key === 'Escape') {
-      e.preventDefault();
+  dialogo.querySelector('.x').addEventListener('click', () => dialogo.close(), { signal });
+  dialogo.querySelector('.galeria-anterior').addEventListener('click', () => mostrar(actual - 1), { signal });
+  dialogo.querySelector('.galeria-siguiente').addEventListener('click', () => mostrar(actual + 1), { signal });
+  dialogo.addEventListener('click', event => {
+    if (event.target === dialogo) dialogo.close();
+  }, { signal });
+  dialogo.addEventListener('keydown', event => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
       dialogo.close();
       return;
     }
-    if (e.key === 'ArrowLeft') mostrar(actual - 1);
-    if (e.key === 'ArrowRight') mostrar(actual + 1);
-  });
+    if (event.key === 'ArrowLeft') mostrar(actual - 1);
+    if (event.key === 'ArrowRight') mostrar(actual + 1);
+  }, { signal });
   dialogo.addEventListener('close', () => {
     video.pause();
     video.removeAttribute('src');
     video.load();
-  });
+  }, { signal });
+  detenerGaleria = () => eventos.abort();
 }
+
+window.aplicarGaleriaFirebase = ({ examples = [], hiddenLocalExamples = [] } = {}) => {
+  const galeria = document.querySelector('.galeria-pagina');
+  if (!galeria) return;
+  const ocultos = new Set(hiddenLocalExamples);
+  galeria.querySelectorAll('.look:not([data-example-custom])').forEach(tarjeta => {
+    const imagen = tarjeta.querySelector('img');
+    if (!imagen) return;
+    const id = `local:${imagen.getAttribute('src')}`;
+    const texto = `${tarjeta.querySelector('.look-titulo')?.textContent || ''} ${tarjeta.dataset.galeriaDetalle || ''} ${imagen.alt}`;
+    tarjeta.dataset.exampleId = id;
+    tarjeta.dataset.ocultoAdmin = String(ocultos.has(id));
+    tarjeta.hidden = ocultos.has(id);
+    if (!tarjeta.dataset.galeriaCategoria) {
+      tarjeta.dataset.galeriaCategoria = /medicube|anua|mixsoon|celimax|skin1004|beauty of joseon|tocobo/i.test(texto)
+        ? 'cuidado-facial productos'
+        : (/\bnovia(s)?\b/i.test(texto) ? 'novias looks' : (imagen.getAttribute('src').startsWith('media/looks/') || imagen.getAttribute('src').startsWith('media/Local/') ? 'looks' : 'productos'));
+    }
+  });
+  galeria.querySelectorAll('[data-example-custom]').forEach(tarjeta => tarjeta.remove());
+  examples.filter(example => example.published).forEach(example => {
+    const tarjeta = document.createElement('button');
+    tarjeta.type = 'button';
+    tarjeta.className = 'look';
+    tarjeta.dataset.galeriaDetalle = example.description || '';
+    tarjeta.dataset.galeriaCategoria = example.category || 'looks';
+    tarjeta.dataset.exampleId = example.id;
+    tarjeta.dataset.exampleCustom = 'true';
+    const imagen = document.createElement('img');
+    imagen.src = example.imageUrl || '';
+    imagen.alt = example.title || 'Ejemplo de maquillaje';
+    imagen.loading = 'lazy';
+    const titulo = document.createElement('span');
+    titulo.className = 'look-titulo';
+    titulo.textContent = example.title || 'Ejemplo';
+    const ampliar = document.createElement('span');
+    ampliar.className = 'look-ver';
+    ampliar.textContent = 'Ampliar foto';
+    tarjeta.append(imagen, titulo, ampliar);
+    galeria.append(tarjeta);
+  });
+  iniciarFiltrosGaleria();
+  iniciarGaleria();
+  ocultarImagenesRotas(galeria);
+};
+
+window.aplicarPaginasLegalesFirebase = pages => {
+  const path = location.pathname.split('/').pop();
+  const pageKey = path === 'Condiciones-Venta.html' ? 'sale' : path === 'Terminos-Condiciones.html' ? 'terms' : null;
+  const page = pageKey ? pages?.[pageKey] : null;
+  if (!page) return;
+  const root = document.querySelector('.pagina-interna');
+  const title = root?.querySelector('.pagina-hero h1');
+  const intro = root?.querySelector('.pagina-hero .intro');
+  const content = root?.querySelector('.contenido-interno');
+  if (!title || !intro || !content) return;
+
+  title.textContent = page.title || title.textContent;
+  intro.textContent = page.intro || '';
+  content.replaceChildren();
+  String(page.body || '').split(/\n\s*\n/).map(part => part.trim()).filter(Boolean).forEach(part => {
+    const lines = part.split('\n').map(line => line.trim()).filter(Boolean);
+    const section = document.createElement('section');
+    section.className = 'bloque-interno';
+    let start = 0;
+    if (/^(\d+\.|#{1,2}\s)/.test(lines[0])) {
+      const heading = document.createElement('h2');
+      heading.textContent = lines[0].replace(/^#{1,2}\s*/, '');
+      section.append(heading);
+      start = 1;
+    }
+    lines.slice(start).forEach(line => {
+      const paragraph = document.createElement('p');
+      paragraph.textContent = line.replace(/^[-*]\s+/, '');
+      section.append(paragraph);
+    });
+    if (section.childElementCount) content.append(section);
+  });
+};
+
+let detenerCarrusel = null;
 
 function iniciarCarrusel() {
   const carrusel = document.querySelector('.carrusel');
   if (!carrusel) return;
+  detenerCarrusel?.();
+  detenerCarrusel = null;
 
-  const slides = [...carrusel.querySelectorAll('.slide')];
+  const slides = [...carrusel.querySelectorAll('.slide:not([hidden])')];
   const contenedorPuntos = carrusel.querySelector('.puntos');
   const botonPausa = carrusel.querySelector('.pausa');
   const contador = carrusel.querySelector('.contador');
-  const DURACION = 7000;
-  let actual = 0;
-  let pausado = false;
-  let transcurrido = 0;
-  let ultimo = performance.now();
+  contenedorPuntos.replaceChildren();
+  if (!slides.length) {
+    carrusel.hidden = true;
+    return;
+  }
+  carrusel.hidden = false;
 
+  const DURACION = 7000;
+  const eventos = new AbortController();
   const puntos = slides.map((_, i) => {
     const punto = document.createElement('button');
     punto.className = 'punto';
     punto.setAttribute('aria-label', `Ir a la diapositiva ${i + 1}`);
-    punto.addEventListener('click', () => ir(i));
+    punto.addEventListener('click', () => ir(i), { signal: eventos.signal });
     contenedorPuntos.append(punto);
     return punto;
   });
-
+  let actual = 0;
+  let pausado = false;
+  let transcurrido = 0;
+  let ultimo = performance.now();
+  let frameId = 0;
+  let inicioX = null;
   const video = slide => slide.querySelector('video');
 
   function ir(indice) {
@@ -386,10 +564,10 @@ function iniciarCarrusel() {
     });
     actual = nuevo;
     transcurrido = 0;
-    const v = video(slides[actual]);
-    if (v && !pausado) {
-      v.currentTime = 0;
-      v.play().catch(() => {});
+    const actualVideo = video(slides[actual]);
+    if (actualVideo && !pausado) {
+      actualVideo.currentTime = 0;
+      actualVideo.play().catch(() => {});
     }
     puntos.forEach((punto, i) => punto.style.setProperty('--p', i < actual ? 1 : 0));
     contador.textContent = `${actual + 1} / ${slides.length}`;
@@ -400,8 +578,8 @@ function iniciarCarrusel() {
     carrusel.classList.toggle('pausado', pausado);
     botonPausa.innerHTML = pausado ? ICONOS.play : ICONOS.pausa;
     botonPausa.setAttribute('aria-label', pausado ? 'Reanudar' : 'Pausar');
-    const v = video(slides[actual]);
-    if (v) pausado ? v.pause() : v.play().catch(() => {});
+    const actualVideo = video(slides[actual]);
+    if (actualVideo) pausado ? actualVideo.pause() : actualVideo.play().catch(() => {});
   }
 
   function ciclo(ahora) {
@@ -412,30 +590,32 @@ function iniciarCarrusel() {
       puntos[actual].style.setProperty('--p', Math.min(transcurrido / DURACION, 1));
       if (transcurrido >= DURACION) ir(actual + 1);
     }
-    requestAnimationFrame(ciclo);
+    frameId = requestAnimationFrame(ciclo);
   }
 
-  carrusel.querySelector('.anterior').addEventListener('click', () => ir(actual - 1));
-  carrusel.querySelector('.siguiente').addEventListener('click', () => ir(actual + 1));
-  botonPausa.addEventListener('click', alternarPausa);
+  carrusel.querySelector('.anterior').addEventListener('click', () => ir(actual - 1), { signal: eventos.signal });
+  carrusel.querySelector('.siguiente').addEventListener('click', () => ir(actual + 1), { signal: eventos.signal });
+  botonPausa.addEventListener('click', alternarPausa, { signal: eventos.signal });
   botonPausa.innerHTML = ICONOS.pausa;
-
-  let inicioX = null;
-  carrusel.addEventListener('pointerdown', e => { inicioX = e.clientX; });
-  carrusel.addEventListener('pointerup', e => {
+  carrusel.addEventListener('pointerdown', event => { inicioX = event.clientX; }, { signal: eventos.signal });
+  carrusel.addEventListener('pointerup', event => {
     if (inicioX === null) return;
-    const distancia = e.clientX - inicioX;
+    const distancia = event.clientX - inicioX;
     inicioX = null;
     if (Math.abs(distancia) > 50) ir(actual + (distancia < 0 ? 1 : -1));
-  });
+  }, { signal: eventos.signal });
   carrusel.setAttribute('tabindex', '0');
-  carrusel.addEventListener('keydown', e => {
-    if (e.key === 'ArrowRight') ir(actual + 1);
-    if (e.key === 'ArrowLeft') ir(actual - 1);
-  });
+  carrusel.addEventListener('keydown', event => {
+    if (event.key === 'ArrowRight') ir(actual + 1);
+    if (event.key === 'ArrowLeft') ir(actual - 1);
+  }, { signal: eventos.signal });
 
   ir(0);
-  requestAnimationFrame(ciclo);
+  frameId = requestAnimationFrame(ciclo);
+  detenerCarrusel = () => {
+    cancelAnimationFrame(frameId);
+    eventos.abort();
+  };
 }
 
 function iniciarInclinacion() {
