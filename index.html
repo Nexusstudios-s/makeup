@@ -3,11 +3,28 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{marca} · Maquillaje</title>
+<meta name="description" content="Make Up By Angelica Cardenas: maquillaje profesional, productos de belleza y atención personalizada en Colombia. Reserva tu cita y descubre nuestros looks.">
+<meta name="theme-color" content="#8f3d62">
+<link rel="canonical" href="https://makeupbyangelica.vercel.app/">
+<link rel="icon" type="image/png" href="/assets/logo/ACV.png">
+<link rel="apple-touch-icon" href="/assets/logo/ACV.png">
+<title>Make Up By Angelica Cardenas | Maquillaje y belleza</title>
+<meta property="og:type" content="website">
+<meta property="og:locale" content="es_CO">
+<meta property="og:site_name" content="Make Up By Angelica Cardenas">
+<meta property="og:url" content="https://makeupbyangelica.vercel.app/">
+<meta property="og:title" content="Make Up By Angelica Cardenas | Maquillaje y belleza">
+<meta property="og:description" content="Maquillaje profesional, productos de belleza y atención personalizada. Agenda tu cita y encuentra tu próximo look favorito.">
+<meta property="og:image" content="https://makeupbyangelica.vercel.app/assets/logo/s.png">
+<meta property="og:image:alt" content="Make Up By Angelica Cardenas, estudio de maquillaje y belleza">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Make Up By Angelica Cardenas | Maquillaje y belleza">
+<meta name="twitter:description" content="Maquillaje profesional, productos de belleza y atención personalizada. Agenda tu cita y encuentra tu próximo look favorito.">
+<meta name="twitter:image" content="https://makeupbyangelica.vercel.app/assets/logo/s.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/estilos.css">
+<link rel="stylesheet" href="css/estilos.css?v=20261103d">
 </head>
 <body>
 <div class="telon notranslate" translate="no" aria-hidden="true"><img class="logo-marca" src="assets/logo/ACV.png" alt=""><p data-marca-completa></p></div>
@@ -31,8 +48,8 @@
 <main>
 <h1 class="solo-lectura" data-marca-completa></h1>
 
-<section class="contenedor carrusel" aria-roledescription="carrusel" aria-label="Novedades">
-<div class="slide s1 activa">
+<section class="contenedor carrusel carrusel-esperando" aria-roledescription="carrusel" aria-label="Novedades">
+<div class="slide s1 activa" data-slide-id="sld-local-bases">
 <img src="media/carrusel/bases-atenea.jpeg" alt="Bases de maquillaje en varios tonos">
 <div class="texto">
 <p class="titular"><span>Tu piel,</span><span>tu tono.</span></p>
@@ -40,7 +57,7 @@
 <a class="boton claro" href="/categoria?c=bases">Ver bases</a>
 </div>
 </div>
-<div class="slide s2">
+<div class="slide s2" data-slide-id="sld-local-tonos">
 <img src="media/carrusel/tonos-base-atenea.jpeg" alt="Muestra de tonos de base sobre la piel">
 <div class="texto">
 <p class="titular"><span>Encuentra</span><span>tu tono.</span></p>
@@ -48,7 +65,7 @@
 <a class="boton claro" href="/categoria?c=bases">Ver bases</a>
 </div>
 </div>
-<div class="slide s3">
+<div class="slide s3" data-slide-id="sld-local-sombras">
 <img src="media/productos/paleta-sombras.jpeg" alt="Paleta de sombras en tonos rosados y neutros">
 <div class="texto">
 <p class="titular"><span>Color con</span><span>intención.</span></p>
@@ -218,13 +235,15 @@
 </footer>
 
 <div id="google_translate_element" class="traductor"></div>
-<script src="js/productos.js"></script>
-<script src="js/principal.js"></script>
+<script src="js/productos.js?v=20261103"></script>
+<script src="js/principal.js?v=20261103f"></script>
 <script src="js/tema.js"></script>
-<script src="js/festividades.js"></script>
+<script src="js/festividades.js?v=20261103c"></script>
 <script src="js/traductor.js"></script>
+<script src="js/security.js"></script>
+<script type="module" src="js/firebase-content.js?v=20261103f"></script>
 <script type="module" src="js/reservas.js"></script>
-<script type="module" src="js/firebase-auth.js"></script>
+<script type="module" src="js/firebase-auth.js?v=20261103b"></script>
 <script src="https://translate.google.com/translate_a/element.js?cb=iniciarTraductor"></script>
 </body>
 </html>

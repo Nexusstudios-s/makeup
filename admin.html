@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/estilos.css">
+  <link rel="stylesheet" href="css/estilos.css?v=20261103f">
 </head>
 <body class="admin-page">
   <header class="cabecera admin-header">
@@ -39,8 +39,38 @@ Angelica Cardenas</span></a>
           <span class="admin-badge" data-admin-role>Invitado</span>
         </div>
 
+        <div class="admin-dashboard-layout">
+          <aside class="admin-sidebar" aria-label="Secciones del panel">
+            <p class="admin-sidebar-label">Panel</p>
+            <button type="button" class="admin-nav-link activo" data-admin-view="overview">Resumen</button>
+            <button type="button" class="admin-nav-link" data-admin-view="users">Usuarios</button>
+            <button type="button" class="admin-nav-link" data-admin-view="reservations">Reservas</button>
+            <button type="button" class="admin-nav-link" data-admin-view="content">Contenido</button>
+            <button type="button" class="admin-nav-link" data-admin-view="festivities">Festividades</button>
+            <button type="button" class="admin-nav-link" data-admin-view="support">Soporte</button>
+          </aside>
+
+          <div class="admin-dashboard-content">
+            <section class="admin-overview" data-admin-section="overview">
+              <div class="admin-overview-heading">
+                <div><p class="sobrelinea">Vista general</p><h2>Tu negocio, de un vistazo</h2></div>
+                <span data-admin-today></span>
+              </div>
+              <div class="admin-stat-grid">
+                <article class="admin-stat"><span>Clientes</span><strong data-stat-users>—</strong><small>cuentas registradas</small></article>
+                <article class="admin-stat"><span>Reservas</span><strong data-stat-reservations>—</strong><small>solicitudes recibidas</small></article>
+                <article class="admin-stat"><span>Productos</span><strong data-stat-products>—</strong><small>elementos en catálogo</small></article>
+                <article class="admin-stat"><span>Decoraciones</span><strong data-stat-festivities>—</strong><small>festividades guardadas</small></article>
+              </div>
+              <div class="admin-quick-actions">
+                <button class="boton" type="button" data-admin-shortcut="festivities">Acomodar festividad</button>
+                <button class="boton claro" type="button" data-admin-shortcut="content">Gestionar catálogo</button>
+                <button class="boton claro" type="button" data-admin-shortcut="reservations">Revisar reservas</button>
+              </div>
+            </section>
+
         <div class="admin-grid">
-          <section class="admin-card">
+          <section class="admin-card" data-admin-section="users">
             <h2>Usuarios</h2>
             <div class="admin-toolbar">
               <button class="boton" type="button" data-refresh-users>Actualizar lista</button>
@@ -48,12 +78,12 @@ Angelica Cardenas</span></a>
             <div class="admin-list" data-users-list aria-live="polite"></div>
           </section>
 
-          <section class="admin-card admin-card-wide">
+          <section class="admin-card admin-card-wide" data-admin-section="reservations">
             <h2>Reservas</h2>
             <div class="admin-list" data-reservas-list aria-live="polite"></div>
           </section>
 
-          <section class="admin-card admin-card-wide">
+          <section class="admin-card admin-card-wide" data-admin-section="content">
             <h2>Notificación global</h2>
             <form data-global-notify-form class="admin-form">
               <label>
@@ -66,10 +96,12 @@ Angelica Cardenas</span></a>
               </label>
               <button class="boton" type="submit">Enviar a todos</button>
             </form>
+            <div class="admin-list" data-global-notifications-list aria-live="polite"></div>
           </section>
 
-          <section class="admin-card admin-card-wide">
+          <section class="admin-card admin-card-wide" data-admin-section="festivities">
             <h2>Festividades</h2>
+            <div class="festivity-editor">
             <form data-festivity-form class="admin-form">
               <label>
                 Título
@@ -82,22 +114,15 @@ Angelica Cardenas</span></a>
                 O sube una imagen
                 <input name="imageFile" type="file" accept="image/*">
               </label>
-              <label>
-                Posición X (%)
-                <input name="left" type="number" step="1" min="0" max="100" value="50">
-              </label>
-              <label>
-                Posición Y (%)
-                <input name="top" type="number" step="1" min="0" max="100" value="20">
-              </label>
-              <label>
-                Tamaño (%)
-                <input name="size" type="number" step="1" min="5" max="80" value="16">
-              </label>
-              <label>
-                Rotación (°)
-                <input name="rotate" type="number" step="1" min="-180" max="180" value="0">
-              </label>
+              <fieldset class="festivity-pages">
+                <legend>Mostrar en estas páginas</legend>
+                <label><input type="checkbox" name="pages" value="index.html" checked> Inicio</label>
+                <label><input type="checkbox" name="pages" value="categoria.html"> Catálogo</label>
+                <label><input type="checkbox" name="pages" value="Ejemplos.html"> Looks</label>
+                <label><input type="checkbox" name="pages" value="Conexiones.html"> Conexiones</label>
+                <label><input type="checkbox" name="pages" value="Condiciones-Venta.html"> Condiciones de venta</label>
+                <label><input type="checkbox" name="pages" value="Terminos-Condiciones.html"> Términos</label>
+              </fieldset>
               <label>
                 Lugar del sitio
                 <select name="location">
@@ -107,16 +132,35 @@ Angelica Cardenas</span></a>
                   <option value="floating">Flotante</option>
                 </select>
               </label>
+              <div class="festivity-sliders">
+                <label>Horizontal <output data-festivity-output="left">50%</output><input name="left" type="range" min="0" max="100" value="50"></label>
+                <label>Vertical <output data-festivity-output="top">20%</output><input name="top" type="range" min="0" max="100" value="20"></label>
+                <label>Tamaño <output data-festivity-output="size">16%</output><input name="size" type="range" min="5" max="80" value="16"></label>
+                <label>Rotación <output data-festivity-output="rotate">0°</output><input name="rotate" type="range" min="-180" max="180" value="0"></label>
+              </div>
               <label class="admin-check">
                 <input name="published" type="checkbox" checked>
                 Publicada
               </label>
               <button class="boton" type="submit">Guardar decoración</button>
             </form>
+            <aside class="festivity-preview-panel">
+              <div class="festivity-preview-heading"><strong>Vista previa</strong><span data-festivity-preview-page>Inicio</span></div>
+              <div class="festivity-preview-window">
+                <div class="festivity-preview-chrome"><i></i><i></i><i></i><span>makeupbyangelica.com</span></div>
+                <div class="festivity-preview-canvas" data-festivity-preview data-location="header">
+                  <div class="festivity-preview-site-header"><b>AC</b><span>MAKE UP BY ANGELICA</span><span>INICIO　CATÁLOGO　CITAS</span></div>
+                  <div class="festivity-preview-site-hero"><small>BEAUTY STUDIO</small><strong>Tu belleza,<br>tu estilo.</strong><span>Descubrir</span></div>
+                  <div class="festivity-preview-image-wrap"><img data-festivity-preview-image alt="Previsualización de la decoración" hidden></div>
+                </div>
+              </div>
+              <p>Arrastra la imagen en la vista previa para ubicarla; ajusta tamaño y giro con los controles.</p>
+            </aside>
+            </div>
             <div class="admin-list" data-festivities-list aria-live="polite"></div>
           </section>
 
-          <section class="admin-card admin-card-wide">
+          <section class="admin-card admin-card-wide" data-admin-section="users">
             <h2>Roles de soporte</h2>
             <form data-role-form class="admin-form">
               <label>
@@ -134,12 +178,107 @@ Angelica Cardenas</span></a>
             </form>
           </section>
 
-          <section class="admin-card admin-card-wide">
+          <section class="admin-card admin-card-wide" data-admin-section="support">
             <h2>Mensajes de soporte</h2>
             <div class="admin-list" data-support-chats-list aria-live="polite"></div>
           </section>
 
-          <section class="admin-card admin-card-wide">
+          <section class="admin-card admin-card-wide" data-admin-section="content">
+            <h2>Carrusel del inicio</h2>
+            <form data-carousel-form class="admin-form admin-carousel-form">
+              <label>Título<input name="title" type="text" required maxlength="100" placeholder="Tu piel, tu tono"></label>
+              <label>Texto corto<textarea name="body" rows="2" required maxlength="220" placeholder="Bases y correctores para un acabado que se siente tuyo."></textarea></label>
+              <label>Foto por URL<input name="imageUrl" type="url" maxlength="500" placeholder="https://..."></label>
+              <label>O sube una foto desde tu dispositivo<input name="imageFile" type="file" accept="image/*"></label>
+              <div class="admin-product-preview" data-carousel-preview hidden></div>
+              <label>Enlace (opcional)<input name="link" type="url" maxlength="400" placeholder="https://... o /categoria?c=bases"></label>
+              <label>Texto del botón<input name="linkLabel" type="text" maxlength="40" placeholder="Ver colección"></label>
+              <label class="admin-check"><input name="published" type="checkbox" checked> Publicada</label>
+              <button class="boton" type="submit">Guardar diapositiva</button>
+            </form>
+            <h3>Diapositivas originales</h3>
+            <div class="admin-list" data-local-carousel-list aria-live="polite"></div>
+            <h3>Diapositivas agregadas</h3>
+            <div class="admin-list" data-custom-carousel-list aria-live="polite"></div>
+          </section>
+
+          <section class="admin-card admin-card-wide" data-admin-section="content">
+            <h2>Ejemplos y galería</h2>
+            <form data-example-form class="admin-form admin-carousel-form">
+              <label>Título<input name="title" type="text" required maxlength="100" placeholder="Look de noche"></label>
+              <label>Descripción<textarea name="description" rows="3" required maxlength="400" placeholder="Describe el maquillaje o el producto."></textarea></label>
+              <label>Foto por URL<input name="imageUrl" type="url" maxlength="500" placeholder="https://..."></label>
+              <label>O sube una foto desde tu dispositivo<input name="imageFile" type="file" accept="image/*"></label>
+              <label>Categoría<select name="category"><option value="looks">Looks</option><option value="productos">Productos</option><option value="novias">Novias</option><option value="cuidado-facial">Cuidado facial</option></select></label>
+              <div class="admin-product-preview" data-example-preview hidden></div>
+              <label class="admin-check"><input name="published" type="checkbox" checked> Visible para todos</label>
+              <button class="boton" type="submit">Guardar ejemplo</button>
+            </form>
+            <h3>Ejemplos originales</h3>
+            <div class="admin-list" data-local-examples-list aria-live="polite"></div>
+            <h3>Ejemplos agregados</h3>
+            <div class="admin-list" data-custom-examples-list aria-live="polite"></div>
+          </section>
+
+          <section class="admin-card admin-card-wide" data-admin-section="content">
+            <h2>Condiciones de venta</h2>
+            <form data-legal-form="sale" class="admin-form admin-legal-form">
+              <label>Título<input name="title" type="text" required maxlength="120"></label>
+              <label>Introducción<textarea name="intro" rows="2" required maxlength="500"></textarea></label>
+              <label>Contenido<textarea name="body" rows="18" required maxlength="16000"></textarea></label>
+              <button class="boton" type="submit">Publicar condiciones de venta</button>
+            </form>
+          </section>
+
+          <section class="admin-card admin-card-wide" data-admin-section="content">
+            <h2>Términos y condiciones</h2>
+            <form data-legal-form="terms" class="admin-form admin-legal-form">
+              <label>Título<input name="title" type="text" required maxlength="120"></label>
+              <label>Introducción<textarea name="intro" rows="2" required maxlength="500"></textarea></label>
+              <label>Contenido<textarea name="body" rows="18" required maxlength="16000"></textarea></label>
+              <button class="boton" type="submit">Publicar términos y condiciones</button>
+            </form>
+          </section>
+
+          <section class="admin-card admin-card-wide" data-admin-section="content">
+            <h2>Ejemplos y galería</h2>
+            <form data-example-form class="admin-form admin-carousel-form">
+              <label>Título<input name="title" type="text" required maxlength="100" placeholder="Look de noche"></label>
+              <label>Descripción<textarea name="description" rows="3" required maxlength="400" placeholder="Describe el maquillaje o el producto."></textarea></label>
+              <label>Foto por URL<input name="imageUrl" type="url" maxlength="500" placeholder="https://..."></label>
+              <label>O sube una foto desde tu dispositivo<input name="imageFile" type="file" accept="image/*"></label>
+              <label>Categoría<select name="category"><option value="looks">Looks</option><option value="productos">Productos</option><option value="novias">Novias</option><option value="cuidado-facial">Cuidado facial</option></select></label>
+              <div class="admin-product-preview" data-example-preview hidden></div>
+              <label class="admin-check"><input name="published" type="checkbox" checked> Visible para todos</label>
+              <button class="boton" type="submit">Guardar ejemplo</button>
+            </form>
+            <h3>Ejemplos originales</h3>
+            <div class="admin-list" data-local-examples-list aria-live="polite"></div>
+            <h3>Ejemplos agregados</h3>
+            <div class="admin-list" data-custom-examples-list aria-live="polite"></div>
+          </section>
+
+          <section class="admin-card admin-card-wide" data-admin-section="content">
+            <h2>Condiciones de venta</h2>
+            <form data-legal-form="sale" class="admin-form admin-legal-form">
+              <label>Título<input name="title" type="text" required maxlength="120"></label>
+              <label>Introducción<textarea name="intro" rows="2" required maxlength="500"></textarea></label>
+              <label>Contenido<textarea name="body" rows="18" required maxlength="16000"></textarea></label>
+              <button class="boton" type="submit">Publicar condiciones de venta</button>
+            </form>
+          </section>
+
+          <section class="admin-card admin-card-wide" data-admin-section="content">
+            <h2>Términos y condiciones</h2>
+            <form data-legal-form="terms" class="admin-form admin-legal-form">
+              <label>Título<input name="title" type="text" required maxlength="120"></label>
+              <label>Introducción<textarea name="intro" rows="2" required maxlength="500"></textarea></label>
+              <label>Contenido<textarea name="body" rows="18" required maxlength="16000"></textarea></label>
+              <button class="boton" type="submit">Publicar términos y condiciones</button>
+            </form>
+          </section>
+
+          <section class="admin-card admin-card-wide" data-admin-section="content">
             <h2>Productos</h2>
             <form data-product-form class="admin-form">
               <label>
@@ -152,12 +291,17 @@ Angelica Cardenas</span></a>
               </label>
               <label>
                 Categoría
-                <input name="categoria" type="text" required maxlength="40" placeholder="bases">
+                <select name="categoria" required data-product-category-select></select>
               </label>
               <label>
-                Imagen
-                <input name="imagen" type="url" required maxlength="400" placeholder="https://...">
+                Imagen por URL
+                <input name="imagen" type="url" maxlength="400" placeholder="https://..." data-product-image-url>
               </label>
+              <label>
+                O sube una foto desde tu dispositivo
+                <input name="imagenArchivo" type="file" accept="image/*" data-product-image-file>
+              </label>
+              <div class="admin-product-preview" data-product-preview hidden aria-live="polite"></div>
               <label>
                 Precio (COP)
                 <input name="precio" type="number" step="1" placeholder="48000">
@@ -170,10 +314,12 @@ Angelica Cardenas</span></a>
                 Detalles (JSON array)
                 <textarea name="detalles" rows="3" placeholder='["Envase de 30 ml","Consulta disponibilidad"]'></textarea>
               </label>
-              <label>
-                Tonos (JSON array)
-                <textarea name="tonos" rows="3" placeholder='[{"n":"Light","c":"#f5ddcb"}]'></textarea>
-              </label>
+              <fieldset class="product-tone-editor">
+                <legend>Colores disponibles</legend>
+                <div class="product-tone-list" data-product-tones></div>
+                <button class="boton claro tone-add" type="button" data-add-product-tone>+ Agregar color</button>
+                <textarea name="tonos" hidden aria-hidden="true"></textarea>
+              </fieldset>
               <label class="admin-check">
                 <input name="published" type="checkbox" checked>
                 Publicado
@@ -181,9 +327,12 @@ Angelica Cardenas</span></a>
               <button class="boton" type="submit">Guardar producto</button>
             </form>
             <div class="admin-list" data-products-list aria-live="polite"></div>
+            <h3>Productos originales del sitio</h3>
+            <p class="admin-help">Puedes ocultarlos para todos sin quitarlos del código.</p>
+            <div class="admin-list" data-local-products-list aria-live="polite"></div>
           </section>
 
-          <section class="admin-card">
+          <section class="admin-card" data-admin-section="content">
             <h2>Categorías</h2>
             <form data-category-form class="admin-form">
               <label>
@@ -215,7 +364,7 @@ Angelica Cardenas</span></a>
             <div class="admin-list" data-categories-list aria-live="polite"></div>
           </section>
 
-          <section class="admin-card">
+          <section class="admin-card" data-admin-section="content">
             <h2>Anuncios</h2>
             <form data-announcement-form class="admin-form">
               <label>
@@ -255,7 +404,7 @@ Angelica Cardenas</span></a>
             <div class="admin-list" data-announcements-list aria-live="polite"></div>
           </section>
 
-          <section class="admin-card">
+          <section class="admin-card" data-admin-section="users">
             <h2>Insignias</h2>
             <form data-badge-form class="admin-form">
               <label>
@@ -278,7 +427,7 @@ Angelica Cardenas</span></a>
             </form>
           </section>
 
-          <section class="admin-card">
+          <section class="admin-card" data-admin-section="users">
             <h2>Saldo</h2>
             <form data-balance-form class="admin-form">
               <label>
@@ -297,7 +446,7 @@ Angelica Cardenas</span></a>
             </form>
           </section>
 
-          <section class="admin-card">
+          <section class="admin-card" data-admin-section="users">
             <h2>Compra</h2>
             <form data-purchase-form class="admin-form">
               <label>
@@ -320,12 +469,16 @@ Angelica Cardenas</span></a>
             </form>
           </section>
         </div>
+          </div>
+        </div>
 
         <p class="admin-status" data-admin-status role="status" aria-live="polite"></p>
       </div>
     </section>
   </main>
 
-  <script type="module" src="js/admin.js"></script>
+  <script src="js/productos.js?v=20261103"></script>
+  <script src="js/security.js"></script>
+  <script type="module" src="js/admin.js?v=20261103g"></script>
 </body>
 </html>
