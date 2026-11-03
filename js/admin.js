@@ -12,6 +12,7 @@ const reservationsList = document.querySelector('[data-reservas-list]');
 const festivitiesList = document.querySelector('[data-festivities-list]');
 const supportChatsList = document.querySelector('[data-support-chats-list]');
 const productReviewsList = document.querySelector('[data-product-reviews-list]');
+const pendingReviewsCount = document.querySelector('[data-pending-reviews]');
 const globalNotificationsList = document.querySelector('[data-global-notifications-list]');
 const productsList = document.querySelector('[data-products-list]');
 const categoriesList = document.querySelector('[data-categories-list]');
@@ -38,7 +39,12 @@ const PAGE_LABELS = {
   'Condiciones-Venta.html': 'Condiciones de venta',
   'Terminos-Condiciones.html': 'Términos'
 };
-let siteVisibility = { hiddenLocalSlides: [], hiddenLocalProducts: [] };
+let siteVisibility = {
+  hiddenLocalSlides: [],
+  hiddenLocalProducts: [],
+  snowfallEnabled: false,
+  pumpkinFallEnabled: false
+};
 let localCarouselSlides = [];
 let customCarouselSlides = [];
 let localExamples = [];
@@ -276,6 +282,18 @@ function parseJsonArray(valor, fallback = []) {
   }
 }
 
+function parseLineList(value) {
+  const text = String(value || '').trim();
+  if (!text) return [];
+  try {
+    const parsed = JSON.parse(text);
+    if (Array.isArray(parsed)) return parsed.map(item => String(item).trim()).filter(Boolean);
+  } catch {
+    // Older product details may already be stored as plain text.
+  }
+  return text.split(/\r?\n/).map(item => item.trim()).filter(Boolean);
+}
+
 function renderUsers(users) {
   window.__adminUsers = users;
   const options = users.map(user => `<option value="${escapeHtml(user.uid)}">${escapeHtml(user.email || user.displayName || user.uid)}</option>`).join('');
@@ -340,6 +358,23 @@ async function guardarVisibilidad(updates) {
   await setDoc(doc(db, 'siteSettings', 'visibility'), { ...siteVisibility, updatedAt: Date.now() }, { merge: true });
 }
 
+document.querySelectorAll('[data-seasonal-effect]').forEach(input => {
+  input.addEventListener('change', async () => {
+    const key = input.dataset.seasonalEffect;
+    const previousValue = !input.checked;
+    input.disabled = true;
+    try {
+      await guardarVisibilidad({ [key]: input.checked });
+      setStatus(input.checked ? 'Efecto activado en toda la web.' : 'Efecto desactivado en toda la web.');
+    } catch (error) {
+      input.checked = previousValue;
+      setStatus(error.message || 'No se pudo guardar el efecto.', true);
+    } finally {
+      input.disabled = false;
+    }
+  });
+});
+
 function renderLocalProducts() {
   const productos = window.catalogoLocal?.productos || [];
   const ocultos = new Set(siteVisibility.hiddenLocalProducts);
@@ -388,8 +423,13 @@ async function refreshCarousel() {
     siteVisibility = {
       hiddenLocalSlides: Array.isArray(data.hiddenLocalSlides) ? data.hiddenLocalSlides : [],
       hiddenLocalProducts: Array.isArray(data.hiddenLocalProducts) ? data.hiddenLocalProducts : [],
-      hiddenLocalExamples: Array.isArray(data.hiddenLocalExamples) ? data.hiddenLocalExamples : []
+      hiddenLocalExamples: Array.isArray(data.hiddenLocalExamples) ? data.hiddenLocalExamples : [],
+      snowfallEnabled: data.snowfallEnabled === true,
+      pumpkinFallEnabled: data.pumpkinFallEnabled === true
     };
+    document.querySelectorAll('[data-seasonal-effect]').forEach(input => {
+      input.checked = siteVisibility[input.dataset.seasonalEffect] === true;
+    });
     localCarouselSlides = slidesLocales;
     customCarouselSlides = customSnap.docs.map(documento => ({ id: documento.id, ...documento.data() }));
     const ocultas = new Set(siteVisibility.hiddenLocalSlides);
@@ -827,6 +867,10 @@ async function refreshProductReviews() {
       }));
     }));
     const pending = reviewsByProduct.flat().filter(review => review.approved !== true);
+    if (pendingReviewsCount) {
+      pendingReviewsCount.textContent = String(pending.length);
+      pendingReviewsCount.hidden = pending.length === 0;
+    }
     renderList(productReviewsList, pending, review => {
       const badges = ['cliente', 'vip', 'veterano']
         .filter(key => review.authorBadges?.[key] === true)
@@ -1010,7 +1054,7 @@ function cargarProductoEnFormulario(id, lista) {
   mostrarVistaPreviaProducto(item.imagen, item.nombre || 'Vista previa del producto');
   form.precio.value = item.precio || '';
   form.descripcion.value = item.descripcion || '';
-  form.detalles.value = JSON.stringify(item.detalles || [], null, 2);
+  form.detalles.value = Array.isArray(item.detalles) ? item.detalles.join('\n') : String(item.detalles || '');
   form.tonos.value = JSON.stringify(item.tonos || [], null, 2);
   renderTonosProducto(item.tonos || []);
   form.published.checked = Boolean(item.published);
@@ -1244,7 +1288,7 @@ document.querySelector('[data-product-form]').addEventListener('submit', async e
       precio: form.precio.value ? Number(form.precio.value) : null,
       availability: form.availability.value || 'inquire',
       descripcion: form.descripcion.value.trim(),
-      detalles: parseJsonArray(form.detalles.value, []),
+      detalles: parseLineList(form.detalles.value),
       tonos: leerTonosProducto(),
       published: form.published.checked,
       updatedAt: Date.now()

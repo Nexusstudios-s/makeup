@@ -1,11 +1,55 @@
 (() => {
   const soporteDb = () => window.__firebaseDb;
 
+  function aplicarEfectosEstacionales(configuracion = {}) {
+    document.querySelectorAll('[data-seasonal-effect-layer]').forEach(layer => layer.remove());
+    const movimientoReducido = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    const crearCaida = (tipo, cantidad) => {
+      const capa = document.createElement('div');
+      capa.className = `efecto-temporada efecto-temporada-${tipo}`;
+      capa.dataset.seasonalEffectLayer = tipo;
+      capa.setAttribute('aria-hidden', 'true');
+      const fragmento = document.createDocumentFragment();
+      for (let indice = 0; indice < cantidad; indice += 1) {
+        const particula = document.createElement('span');
+        particula.className = 'efecto-temporada-particula';
+        if (tipo === 'calabazas') {
+          particula.classList.add('efecto-temporada-calabaza');
+          particula.textContent = '\u{1F383}';
+        } else {
+          particula.classList.add('efecto-temporada-copo');
+        }
+        particula.style.left = `${Math.random() * 100}%`;
+        particula.style.setProperty('--duracion-caida', `${7 + Math.random() * 9}s`);
+        particula.style.setProperty('--retardo-caida', `${-Math.random() * 16}s`);
+        particula.style.setProperty('--deriva-caida', `${Math.round(Math.random() * 150 - 75)}px`);
+        particula.style.setProperty('--giro-caida', `${Math.round(Math.random() * 540 - 270)}deg`);
+        particula.style.setProperty('--tamano-caida', tipo === 'calabazas' ? `${20 + Math.random() * 18}px` : `${3 + Math.random() * 5}px`);
+        if (movimientoReducido) particula.style.top = `${Math.random() * 96}%`;
+        fragmento.append(particula);
+      }
+      capa.append(fragmento);
+      document.body.append(capa);
+    };
+
+    if (configuracion.snowfallEnabled === true) crearCaida('nieve', 38);
+    if (configuracion.pumpkinFallEnabled === true) crearCaida('calabazas', 14);
+  }
+
+  window.aplicarEfectosEstacionales = aplicarEfectosEstacionales;
+
   async function cargarFestividadesFirebase() {
     const db = soporteDb();
     if (!db) return;
     try {
-      const { collection, getDocs, query, where } = await import('https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js');
+      const { collection, doc, getDoc, getDocs, query, where } = await import('https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js');
+      try {
+        const settingsSnap = await getDoc(doc(db, 'siteSettings', 'visibility'));
+        aplicarEfectosEstacionales(settingsSnap.exists() ? settingsSnap.data() : {});
+      } catch (error) {
+        console.info('Los efectos estacionales no están disponibles todavía.', error.message || error);
+      }
       const snap = await getDocs(query(collection(db, 'festivities'), where('published', '==', true)));
       const items = snap.docs.map(documento => ({ id: documento.id, ...documento.data() }));
       if (!items.length) return;
