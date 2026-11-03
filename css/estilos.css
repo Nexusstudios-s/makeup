@@ -1171,7 +1171,7 @@ body.auth-habilitada { padding-bottom: 6rem; }
 .perfil-portada { position: relative; display: grid; place-items: center; width: 100%; height: 104px; overflow: hidden; border: 1px solid var(--linea); border-radius: 14px; background: linear-gradient(120deg, rgba(139, 100, 119, .18), rgba(215, 182, 119, .2), rgba(129, 170, 140, .22)); color: var(--malva); font-size: .82rem; font-weight: 600; }
 .perfil-portada img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .perfil-portada span { position: relative; z-index: 1; padding: .25rem .55rem; border-radius: 999px; background: rgba(251, 248, 248, .76); }
-.perfil-identidad { display: grid; grid-template-columns: 58px minmax(0, 1fr); align-items: center; gap: .75rem; width: 100%; margin-top: -.5rem; text-align: left; }
+.perfil-identidad { display: grid; grid-template-columns: 58px minmax(0, 1fr); align-items: center; gap: .75rem; width: 100%; margin-top: -.5rem; padding: .55rem .7rem; border: 1px solid var(--linea); border-radius: 16px; background: linear-gradient(120deg, rgba(139, 100, 119, .08), rgba(215, 182, 119, .1)); text-align: left; }
 .perfil-identidad > div { min-width: 0; }
 .perfil-identidad > div > p { overflow-wrap: anywhere; font-size: .82rem; opacity: .7; }
 .perfil-insignias { display: flex; flex-wrap: wrap; align-items: start; gap: .35rem; margin-top: .4rem; }
@@ -1184,11 +1184,15 @@ body.auth-habilitada { padding-bottom: 6rem; }
 .perfil-form textarea { resize: vertical; }
 .perfil-archivos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .55rem; }
 .perfil-archivos input { min-height: auto; padding: .45rem; font-size: .72rem; }
-.perfil-resumen { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .6rem; width: 100%; text-align: left; }
-.perfil-resumen section { min-width: 0; padding: .7rem; border: 1px solid var(--linea); border-radius: 11px; background: rgba(139, 100, 119, .045); }
-.perfil-resumen h4, .perfil-password h4 { margin-bottom: .35rem; font-size: .85rem; }
-.perfil-resumen p, .perfil-resumen li { overflow-wrap: anywhere; font-size: .75rem; opacity: .78; }
-.perfil-resumen ul { display: grid; gap: .3rem; max-height: 120px; overflow: auto; padding-left: 1rem; }
+.perfil-resumen { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; width: 100%; text-align: left; }
+.perfil-card { min-width: 0; padding: .8rem .75rem; border: 1px solid var(--linea); border-radius: 16px; background: linear-gradient(180deg, rgba(139, 100, 119, .05), rgba(255, 255, 255, .02)); box-shadow: 0 10px 20px rgba(35, 28, 33, .04); }
+.perfil-card-header { display: flex; align-items: center; gap: .45rem; margin-bottom: .45rem; }
+.perfil-card-icon { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 8px; background: rgba(139, 100, 119, .12); font-size: .9rem; }
+.perfil-card h4, .perfil-password h4 { margin: 0; font-size: .85rem; }
+.perfil-saldo { margin: 0 0 .45rem; font-size: 1.05rem; font-weight: 700; color: var(--malva); }
+.perfil-list { display: grid; gap: .35rem; max-height: 120px; margin: 0; padding-left: 1rem; overflow: auto; }
+.perfil-list li { overflow-wrap: anywhere; font-size: .75rem; opacity: .8; }
+.perfil-list-mini { max-height: 100px; }
 .perfil-password { padding-top: .75rem; border-top: 1px solid var(--linea); }
 body.modo-noche .cuenta-dock { border-color: rgba(243, 239, 231, .2); background: rgba(25, 36, 32, .86); color: var(--tinta); box-shadow: 0 12px 40px rgba(0, 0, 0, .38), inset 0 1px 0 rgba(255, 255, 255, .08); }
 body.modo-noche .dock-cuenta { background: #d7b677; color: #1b2420; }
@@ -1199,6 +1203,48 @@ body.modo-noche .auth-tabs button[aria-pressed="true"] { background: #30413b; }
 body.modo-noche .auth-provider { border-color: var(--linea); background: #263530; color: var(--tinta); }
 body.modo-noche .perfil-resumen section, body.modo-noche .insignia-detalle { border-color: var(--linea); background: #263530; color: var(--tinta); }
 
+.admin-main { padding-top: 2rem; padding-bottom: 4rem; }
+.admin-shell { display: grid; gap: 1.25rem; }
+.admin-guard { display: grid; gap: .85rem; max-width: 40rem; margin: 2rem auto 0; padding: clamp(1.5rem, 4vw, 2.4rem); border: 1px solid var(--linea); border-radius: 22px; background: rgba(255,255,255,.62); text-align: center; }
+.admin-panel { display: grid; gap: 1.25rem; }
+.admin-hero { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 1.3rem 1.4rem; border: 1px solid var(--linea); border-radius: 18px; background: rgba(255,255,255,.62); }
+.admin-badge { display: inline-flex; align-items: center; justify-content: center; min-height: 32px; padding: .3rem .8rem; border-radius: 999px; background: rgba(139, 100, 119, .15); color: var(--malva); font-weight: 700; }
+.admin-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.admin-card { display: grid; gap: .8rem; padding: 1.1rem; border: 1px solid var(--linea); border-radius: 20px; background: rgba(255,255,255,.62); }
+.admin-card-wide { grid-column: 1 / -1; }
+.admin-card h2 { font-size: 1.2rem; }
+.admin-list { display: grid; gap: .55rem; }
+.admin-row, .admin-user-row { display: flex; align-items: center; justify-content: space-between; gap: .8rem; padding: .7rem .8rem; border: 1px solid var(--linea); border-radius: 12px; background: rgba(139, 100, 119, .04); }
+.admin-row > div, .admin-user-row > div { min-width: 0; }
+.admin-row strong, .admin-user-row strong { display: block; overflow-wrap: anywhere; }
+.admin-row small, .admin-user-row small { display: block; margin-top: .18rem; opacity: .72; }
+.admin-row p { margin-top: .25rem; font-size: .78rem; opacity: .72; }
+.row-actions { display: flex; flex-wrap: wrap; gap: .45rem; }
+.admin-form { display: grid; gap: .8rem; }
+.admin-form label { display: grid; gap: .35rem; font-size: .83rem; font-weight: 600; }
+.admin-form input, .admin-form textarea, .admin-form select { width: 100%; min-height: 42px; padding: .6rem .7rem; border: 1px solid var(--linea); border-radius: 10px; background: #fff; color: var(--tinta); font: 500 .9rem var(--texto); }
+.admin-form textarea { min-height: 90px; resize: vertical; }
+.admin-check { display: flex !important; align-items: center; gap: .55rem; }
+.admin-check input { width: auto; min-height: auto; }
+.admin-status { min-height: 1.2em; font-weight: 600; }
+.campana { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 42px; border: 0; border-radius: 50%; background: var(--tinta); color: var(--papel); cursor: pointer; }
+.campana svg { width: 20px; height: 20px; }
+.campana-count { position: absolute; top: -4px; right: -4px; min-width: 18px; height: 18px; padding: 0 .25rem; border-radius: 999px; background: #d45c5c; color: #fff; font-size: .68rem; line-height: 18px; text-align: center; }
+.panel-notificaciones { position: fixed; right: 1rem; bottom: 5.6rem; z-index: 90; width: min(360px, calc(100vw - 1.2rem)); padding: .8rem; border: 1px solid var(--linea); border-radius: 18px; background: rgba(250,250,250,.94); backdrop-filter: blur(18px); box-shadow: 0 20px 40px rgba(0,0,0,.14); }
+.panel-notificaciones-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: .5rem; }
+.lista-notificaciones { display: grid; gap: .5rem; max-height: 300px; overflow: auto; }
+.notificacion-item { padding: .7rem .8rem; border: 1px solid var(--linea); border-radius: 12px; background: rgba(139, 100, 119, .04); }
+.notificacion-item.nueva { border-color: rgba(139, 100, 119, .5); }
+.notificacion-item p { margin: .2rem 0; font-size: .76rem; }
+.notificacion-item small { opacity: .72; }
+.notificacion-vacia { opacity: .7; font-size: .8rem; }
+.reserva-modal { width: min(520px, calc(100vw - 1.5rem)); padding: 0; border: 1px solid var(--linea); border-radius: 24px; background: var(--papel); }
+.reserva-modal::backdrop { background: rgba(20,18,18,.55); backdrop-filter: blur(8px); }
+.reserva-panel { display: grid; gap: 1rem; padding: 1.4rem; }
+.reserva-panel h2 { margin: 0; }
+.modal-form { display: grid; gap: .7rem; }
+.modal-form label { display: grid; gap: .35rem; font-weight: 600; }
+.reserva-acciones { display: flex; justify-content: flex-end; gap: .6rem; margin-top: .5rem; }
 @media (max-width: 560px) {
   body.auth-habilitada { padding-bottom: 5.3rem; }
   .cuenta-dock { gap: .05rem; width: calc(100vw - 1rem); justify-content: space-between; padding: .32rem; }
