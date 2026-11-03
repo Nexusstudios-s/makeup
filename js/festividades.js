@@ -1,4 +1,41 @@
 (() => {
+  const soporteDb = () => window.__firebaseDb;
+
+  async function cargarFestividadesFirebase() {
+    const db = soporteDb();
+    if (!db) return;
+    try {
+      const { collection, getDocs, query, where } = await import('https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js');
+      const snap = await getDocs(query(collection(db, 'festivities'), where('published', '==', true)));
+      const items = snap.docs.map(documento => ({ id: documento.id, ...documento.data() }));
+      if (!items.length) return;
+      items.forEach(item => {
+        const contenedor = document.querySelector(item.location === 'header' ? '.cabecera' : item.location === 'hero' ? '.hero, .hero-banner, .portada-principal' : 'body');
+        if (!contenedor) return;
+        const decoracion = document.createElement('img');
+        decoracion.src = item.imageUrl || '';
+        decoracion.alt = item.title || 'Decoración';
+        decoracion.className = 'decoracion-festiva';
+        decoracion.style.position = item.location === 'floating' || item.location === 'page' ? 'fixed' : 'absolute';
+        decoracion.style.left = `${item.left ?? 50}%`;
+        decoracion.style.top = `${item.top ?? 20}%`;
+        decoracion.style.width = `${item.size ?? 16}%`;
+        decoracion.style.transform = `rotate(${item.rotate ?? 0}deg)`;
+        decoracion.style.zIndex = item.location === 'header' ? '2' : '15';
+        decoracion.style.pointerEvents = 'none';
+        contenedor.appendChild(decoracion);
+      });
+    } catch (error) {
+      console.info('Las decoraciones Firestore no están listas todavía.', error.message || error);
+    }
+  }
+
+  if (window.__firebaseDb) {
+    cargarFestividadesFirebase();
+  } else {
+    window.addEventListener('firebase:ready', cargarFestividadesFirebase, { once: true });
+  }
+
   const colores = [
     { luz: '#fff1cb', halo: 'rgba(255, 226, 158, .65)' },
     { luz: '#e8b653', halo: 'rgba(232, 182, 83, .55)' },

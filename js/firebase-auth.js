@@ -12,7 +12,7 @@ import {
   updateProfile,
   EmailAuthProvider
 } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js';
-import { collection, doc, getDoc, getDocs, serverTimestamp, setDoc } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js';
+import { addDoc, collection, doc, getDoc, getDocs, serverTimestamp, setDoc } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js';
 import { auth, db } from './firebase-client.js';
 
 const dock = document.createElement('nav');
@@ -31,12 +31,22 @@ dock.innerHTML = `
     <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18m-12 4 2 2 4-4"/></svg>
     <span>Reservar</span>
   </a>
+  <button class="dock-cuenta" type="button" data-support-open aria-label="Mensajes de soporte">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a3 3 0 0 1-3 3H9l-6 3V6a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3z"/><path d="M8 9h8M8 13h6"/></svg>
+    <span>Mensajes</span>
+  </button>
   <button class="dock-cuenta" type="button" data-auth-open aria-label="Iniciar sesión">
     <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
     <span data-auth-label>Acceder</span>
   </button>`;
 
 document.body.append(dock);
+
+const SUPPORT_EMAILS = ['angelicacb05@gmail.com', 'santhiagocaro05@gmail.com'];
+window.__firebaseDb = db;
+window.__firebaseAuth = auth;
+window.__supportEmails = SUPPORT_EMAILS;
+window.dispatchEvent(new CustomEvent('firebase:ready'));
 
 const modal = document.createElement('dialog');
 modal.className = 'auth-dialog';
@@ -94,8 +104,21 @@ modal.innerHTML = `
         <button class="boton auth-submit" type="submit" data-profile-save>Guardar perfil</button>
       </form>
       <div class="perfil-resumen">
-        <section><h4>Mis compras</h4><ul data-perfil-compras></ul></section>
-        <section><h4>Mi saldo</h4><p data-perfil-saldo></p><ul data-perfil-movimientos></ul></section>
+        <section class="perfil-card perfil-card-compras">
+          <div class="perfil-card-header">
+            <span class="perfil-card-icon" aria-hidden="true">🛍️</span>
+            <h4>Mis compras</h4>
+          </div>
+          <ul class="perfil-list" data-perfil-compras></ul>
+        </section>
+        <section class="perfil-card perfil-card-saldo">
+          <div class="perfil-card-header">
+            <span class="perfil-card-icon" aria-hidden="true">💰</span>
+            <h4>Mi saldo</h4>
+          </div>
+          <p class="perfil-saldo" data-perfil-saldo></p>
+          <ul class="perfil-list perfil-list-mini" data-perfil-movimientos></ul>
+        </section>
       </div>
       <form class="perfil-password" data-password-form>
         <h4>Cambiar contraseña</h4>
@@ -109,6 +132,30 @@ modal.innerHTML = `
   </div>`;
 
 document.body.append(modal);
+
+const supportModal = document.createElement('dialog');
+supportModal.className = 'auth-dialog support-dialog';
+supportModal.setAttribute('aria-labelledby', 'support-title');
+supportModal.innerHTML = `
+  <button class="x" type="button" aria-label="Cerrar soporte">×</button>
+  <div class="auth-panel">
+    <div class="auth-intro">
+      <img src="assets/logo/ACV.png" alt="" width="52" height="52">
+      <p class="sobrelinea">Atención personalizada</p>
+      <h2 id="support-title">Mensajes de soporte</h2>
+      <p>Contáctanos directamente desde la web y resuelve dudas sobre citas, pedidos o servicios.</p>
+    </div>
+    <div class="support-thread-list" data-support-thread-list></div>
+    <div class="support-message-list" data-support-message-list></div>
+    <form class="support-form" data-support-form>
+      <label>Escribe tu mensaje
+        <textarea name="message" rows="4" maxlength="600" required placeholder="Escribe aquí tu mensaje..."></textarea>
+      </label>
+      <button class="boton auth-submit" type="submit">Enviar mensaje</button>
+    </form>
+    <p class="auth-feedback" data-support-feedback role="status" aria-live="polite"></p>
+  </div>`;
+document.body.append(supportModal);
 
 const formulario = modal.querySelector('[data-auth-form]');
 const campoNombre = modal.querySelector('.auth-nombre');
@@ -237,6 +284,128 @@ async function cargarPerfil(usuario) {
 function mostrarFeedback(mensaje, error = false) {
   feedback.textContent = mensaje;
   feedback.classList.toggle('error', error);
+}
+
+function esCuentaSoporte(email) {
+  return typeof email === 'string' && SUPPORT_EMAILS.includes(email.trim().toLowerCase());
+}
+
+async function obtenerChatSoporte(usuario) {
+  const chatId = usuario.uid;
+  const ref = doc(db, 'supportChats', chatId);
+  const chatSnap = await getDoc(ref);
+  if (!chatSnap.exists()) {
+    await setDoc(ref, {
+      uid: usuario.uid,
+      userEmail: usuario.email || '',
+      userName: usuario.displayName || usuario.email?.split('@')[0] || 'Cliente',
+      status: 'abierto',
+      lastMessage: 'Nuevo mensaje',
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    });
+  }
+  return chatId;
+}
+
+async function renderChatSoporte() {
+  const supportFeedback = supportModal.querySelector('[data-support-feedback]');
+  const list = supportModal.querySelector('[data-support-message-list]');
+  const threadList = supportModal.querySelector('[data-support-thread-list]');
+  const form = supportModal.querySelector('[data-support-form]');
+  if (!usuarioActual) {
+    list.innerHTML = '<p>Inicia sesión para escribir a soporte.</p>';
+    threadList.innerHTML = '';
+    form.hidden = true;
+    supportFeedback.textContent = 'Inicia sesión para usar el chat.';
+    return;
+  }
+
+  const chatId = await obtenerChatSoporte(usuarioActual);
+  form.hidden = false;
+  const mensajesSnap = await getDocs(collection(db, 'supportChats', chatId, 'messages'));
+  const mensajes = mensajesSnap.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() })).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+
+  if (mensajes.length === 0) {
+    list.innerHTML = '<p>Aún no hay mensajes en este chat.</p>';
+  } else {
+    list.innerHTML = mensajes.map(mensaje => `
+      <article class="support-message ${mensaje.sender === 'support' ? 'support-message-admin' : ''}">
+        <strong>${mensaje.sender === 'support' ? 'Soporte' : (usuarioActual.displayName || 'Tú')}</strong>
+        <p>${(mensaje.text || '').replace(/</g, '&lt;')}</p>
+      </article>
+    `).join('');
+  }
+
+  if (esCuentaSoporte(usuarioActual.email)) {
+    const chatsSnap = await getDocs(collection(db, 'supportChats'));
+    const chats = chatsSnap.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
+    threadList.innerHTML = chats.length
+      ? chats.map(chat => `<button type="button" class="support-thread" data-support-thread="${chat.id}">${chat.userName || chat.userEmail || 'Cliente'} · ${chat.status || 'abierto'}</button>`).join('')
+      : '<p>No hay chats activos.</p>';
+    threadList.querySelectorAll('[data-support-thread]').forEach(boton => {
+      boton.addEventListener('click', async () => {
+        const threadId = boton.dataset.supportThread;
+        const chatRef = doc(db, 'supportChats', threadId);
+        const chatSnap = await getDoc(chatRef);
+        const destino = chatSnap.data() || {};
+        const mensajesSnap2 = await getDocs(collection(db, 'supportChats', threadId, 'messages'));
+        const mensajes2 = mensajesSnap2.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() })).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+        list.innerHTML = mensajes2.length
+          ? mensajes2.map(mensaje => `
+            <article class="support-message ${mensaje.sender === 'support' ? 'support-message-admin' : ''}">
+              <strong>${mensaje.sender === 'support' ? 'Soporte' : (destino.userName || 'Cliente')}</strong>
+              <p>${(mensaje.text || '').replace(/</g, '&lt;')}</p>
+            </article>
+          `).join('')
+          : '<p>Todavía no hay mensajes para este cliente.</p>';
+        form.dataset.supportThreadId = threadId;
+        supportFeedback.textContent = `Responder a ${destino.userName || destino.userEmail || 'este cliente'}.`;
+      });
+    });
+    if (!form.dataset.supportThreadId && chats[0]) {
+      form.dataset.supportThreadId = chats[0].id;
+      supportFeedback.textContent = `Responder a ${chats[0].userName || chats[0].userEmail || 'este cliente'}.`;
+    }
+  } else {
+    threadList.innerHTML = '<p>Tu chat con soporte se guarda como conversación privada.</p>';
+    form.dataset.supportThreadId = chatId;
+  }
+
+  form.onsubmit = async event => {
+    event.preventDefault();
+    const textarea = form.elements.message;
+    const text = textarea.value.trim();
+    if (!text) return;
+    const threadId = form.dataset.supportThreadId || chatId;
+    const sender = esCuentaSoporte(usuarioActual.email) ? 'support' : 'client';
+    await addDoc(collection(db, 'supportChats', threadId, 'messages'), {
+      sender,
+      text,
+      createdAt: Date.now(),
+      createdBy: usuarioActual.uid
+    });
+    await setDoc(doc(db, 'supportChats', threadId), {
+      lastMessage: text,
+      status: sender === 'client' ? 'abierto' : 'respondido',
+      updatedAt: Date.now(),
+      userEmail: usuarioActual.email || '',
+      userName: usuarioActual.displayName || usuarioActual.email?.split('@')[0] || 'Cliente'
+    }, { merge: true });
+    textarea.value = '';
+    await renderChatSoporte();
+    supportFeedback.textContent = 'Mensaje enviado.';
+  };
+}
+
+function abrirChatSoporte() {
+  if (!usuarioActual) {
+    mostrarFeedback('Debes iniciar sesión para hablar con soporte.', true);
+    modal.showModal();
+    return;
+  }
+  renderChatSoporte();
+  supportModal.showModal();
 }
 
 function mensajeError(error) {
@@ -414,9 +583,16 @@ modal.querySelector('.x').addEventListener('click', () => modal.close());
 modal.addEventListener('click', event => {
   if (event.target === modal) modal.close();
 });
+supportModal.querySelector('.x').addEventListener('click', () => supportModal.close());
+supportModal.addEventListener('click', event => {
+  if (event.target === supportModal) supportModal.close();
+});
 dock.querySelector('[data-auth-open]').addEventListener('click', () => {
   mostrarFeedback('');
   actualizarSesion(usuarioActual);
   modal.showModal();
+});
+dock.querySelector('[data-support-open]').addEventListener('click', () => {
+  abrirChatSoporte();
 });
 onAuthStateChanged(auth, actualizarSesion);

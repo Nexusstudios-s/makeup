@@ -1,5 +1,5 @@
 import { onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js';
-import { collection, deleteDoc, doc, getDocs, setDoc } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js';
+import { addDoc, collection, deleteDoc, doc, getDocs, setDoc } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js';
 import { getFunctions, httpsCallable } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-functions.js';
 import { appFirebase, auth, db } from './firebase-client.js';
 
@@ -18,6 +18,9 @@ const roleBadge = document.querySelector('[data-admin-role]');
 const status = document.querySelector('[data-admin-status]');
 const userSelects = document.querySelectorAll('[data-user-select]');
 const usersList = document.querySelector('[data-users-list]');
+const reservationsList = document.querySelector('[data-reservas-list]');
+const festivitiesList = document.querySelector('[data-festivities-list]');
+const supportChatsList = document.querySelector('[data-support-chats-list]');
 const productsList = document.querySelector('[data-products-list]');
 const categoriesList = document.querySelector('[data-categories-list]');
 const announcementsList = document.querySelector('[data-announcements-list]');
@@ -89,6 +92,146 @@ async function refreshUsers() {
     renderUsers(resultado.data.users || []);
   } catch (error) {
     setStatus(error.message || 'No se pudo cargar la lista.', true);
+  }
+}
+
+async function refreshReservations() {
+  try {
+    const reservasSnap = await getDocs(collection(db, 'reservas'));
+    const reservas = reservasSnap.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
+    reservas.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+
+    renderList(reservationsList, reservas, item => `
+      <article class="admin-row reserva-row">
+        <div>
+          <strong>${item.nombre || 'Reserva'}</strong>
+          <small>${item.servicio} · ${item.fecha || 'fecha pendiente'} · ${item.status || 'pendiente'}</small>
+          <p>${item.mensaje || 'Sin detalles adicionales'}</p>
+        </div>
+        <div class="row-actions">
+          <button class="boton claro" type="button" data-approve="${item.id}">Aceptar</button>
+          <button class="boton claro" type="button" data-reject="${item.id}">Rechazar</button>
+        </div>
+      </article>
+    `, 'No hay reservas.');
+
+    reservationsList.querySelectorAll('[data-approve]').forEach(button => {
+      button.addEventListener('click', async () => {
+        const reserva = reservas.find(item => item.id === button.dataset.approve);
+        const decision = window.prompt(`Aceptaste la reserva de ${reserva?.nombre || 'esta cita'}. Indica detalles de hora o cambios:`, 'Confirmado. Hora acordada por WhatsApp.');
+        if (decision === null) return;
+        await actualizarReserva(button.dataset.approve, { status: 'aceptada', decision: decision.trim() || 'Confirmado. Hora acordada por WhatsApp.' });
+      });
+    });
+
+    reservationsList.querySelectorAll('[data-reject]').forEach(button => {
+      button.addEventListener('click', async () => {
+        const reserva = reservas.find(item => item.id === button.dataset.reject);
+        const motivo = window.prompt(`Rechaza la reserva de ${reserva?.nombre || 'esta cita'}. Escribe la razón:`, 'No hay disponibilidad para esa fecha.');
+        if (motivo === null) return;
+        await actualizarReserva(button.dataset.reject, { status: 'rechazada', decision: motivo.trim() || 'No hay disponibilidad para esa fecha.' });
+      });
+    });
+  } catch (error) {
+    setStatus(error.message || 'No se pudieron cargar las reservas.', true);
+  }
+}
+
+async function actualizarReserva(id, payload) {
+  const docRef = doc(db, 'reservas', id);
+  await setDoc(docRef, { ...payload, reviewedAt: Date.now() }, { merge: true });
+  const reserva = (await getDocs(collection(db, 'reservas'))).docs.find(docSnap => docSnap.id === id)?.data();
+  const userId = reserva?.userId;
+  if (userId) {
+    await addDoc(collection(db, 'profiles', userId, 'notifications'), {
+      title: payload.status === 'aceptada' ? 'Reserva aceptada' : 'Reserva rechazada',
+      message: payload.decision || 'Revisa tu agenda.',
+      read: false,
+      createdAt: Date.now()
+    });
+  }
+  setStatus(`Reserva ${payload.status}.`);
+  await refreshReservations();
+}
+
+async function refreshFestivities() {
+  try {
+    const snap = await getDocs(collection(db, 'festivities'));
+    const items = snap.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
+    renderList(festivitiesList, items, item => `
+      <article class="admin-row">
+        <div>
+          <strong>${item.title || item.id}</strong>
+          <small>${item.location || 'floating'} · ${item.published ? 'Publicada' : 'Oculta'}</small>
+        </div>
+        <div class="row-actions">
+          <button class="boton claro" type="button" data-edit-festivity="${item.id}">Editar</button>
+          <button class="boton claro" type="button" data-delete-festivity="${item.id}">Eliminar</button>
+        </div>
+      </article>
+    `, 'No hay decoraciones guardadas.');
+    festivitiesList.querySelectorAll('[data-edit-festivity]').forEach(button => {
+      button.addEventListener('click', async () => {
+        const item = items.find(entry => entry.id === button.dataset.editFestivity);
+        if (!item) return;
+        const form = document.querySelector('[data-festivity-form]');
+        form.title.value = item.title || '';
+        form.imageUrl.value = item.imageUrl || '';
+        form.left.value = item.left ?? 50;
+        form.top.value = item.top ?? 20;
+        form.size.value = item.size ?? 16;
+        form.rotate.value = item.rotate ?? 0;
+        form.location.value = item.location || 'floating';
+        form.published.checked = Boolean(item.published);
+        form.dataset.editingId = item.id;
+        form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      });
+    });
+    festivitiesList.querySelectorAll('[data-delete-festivity]').forEach(button => {
+      button.addEventListener('click', async () => {
+        await deleteDoc(doc(db, 'festivities', button.dataset.deleteFestivity));
+        setStatus('Decoración eliminada.');
+        await refreshFestivities();
+      });
+    });
+  } catch (error) {
+    setStatus(error.message || 'No se pudieron cargar las decoraciones.', true);
+  }
+}
+
+async function refreshSupportChats() {
+  try {
+    const snap = await getDocs(collection(db, 'supportChats'));
+    const chats = snap.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
+    renderList(supportChatsList, chats, item => `
+      <article class="admin-row">
+        <div>
+          <strong>${item.userName || item.userEmail || 'Cliente'}</strong>
+          <small>${item.userEmail || 'Sin email'} · ${item.status || 'abierto'}</small>
+        </div>
+        <div class="row-actions">
+          <button class="boton claro" type="button" data-reply-chat="${item.id}">Responder</button>
+        </div>
+      </article>
+    `, 'No hay mensajes de soporte.');
+    supportChatsList.querySelectorAll('[data-reply-chat]').forEach(button => {
+      button.addEventListener('click', async () => {
+        const chatId = button.dataset.replyChat;
+        const text = window.prompt('Escribe la respuesta para este cliente:', 'Gracias por contactarnos.');
+        if (!text || !text.trim()) return;
+        const message = {
+          sender: 'support',
+          text: text.trim(),
+          createdAt: Date.now(),
+          createdBy: auth.currentUser?.uid || 'system'
+        };
+        await addDoc(collection(db, 'supportChats', chatId, 'messages'), message);
+        await setDoc(doc(db, 'supportChats', chatId), { lastMessage: text.trim(), status: 'respondido', updatedAt: Date.now() }, { merge: true });
+        setStatus('Respuesta enviada al cliente.');
+      });
+    });
+  } catch (error) {
+    setStatus(error.message || 'No se pudieron cargar los mensajes.', true);
   }
 }
 
@@ -229,7 +372,10 @@ async function checkAdmin(usuario) {
   }
 
   const token = await usuario.getIdTokenResult();
-  const admin = token.claims.admin === true;
+  const supportEmails = ['angelicacb05@gmail.com', 'santhiagocaro05@gmail.com'];
+  const email = (usuario.email || '').toLowerCase();
+  const admin = token.claims.admin === true || supportEmails.includes(email) || token.claims.support === true;
+  const support = token.claims.support === true || supportEmails.includes(email);
   if (!admin) {
     guard.hidden = false;
     panel.hidden = true;
@@ -239,8 +385,11 @@ async function checkAdmin(usuario) {
 
   guard.hidden = true;
   panel.hidden = false;
-  roleBadge.textContent = 'Administrador';
+  roleBadge.textContent = admin && support ? 'Soporte / Admin' : (support ? 'Soporte' : 'Administrador');
   await refreshUsers();
+  await refreshReservations();
+  await refreshFestivities();
+  await refreshSupportChats();
   await refreshContent();
 }
 
@@ -315,6 +464,100 @@ document.querySelector('[data-announcement-form]').addEventListener('submit', as
   form.reset();
   form.published.checked = true;
   await refreshContent();
+});
+
+document.querySelector('[data-global-notify-form]').addEventListener('submit', async event => {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const title = form.title.value.trim();
+  const message = form.message.value.trim();
+  if (!title || !message) {
+    setStatus('Completa el título y el mensaje de la notificación global.', true);
+    return;
+  }
+  try {
+    await addDoc(collection(db, 'globalNotifications'), {
+      title,
+      message,
+      createdAt: Date.now(),
+      readBy: []
+    });
+    setStatus('Notificación global enviada.');
+    form.reset();
+  } catch (error) {
+    setStatus(error.message || 'No se pudo enviar la notificación global.', true);
+  }
+});
+
+document.querySelector('[data-festivity-form]').addEventListener('submit', async event => {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const file = form.imageFile.files[0];
+  let imageUrl = form.imageUrl.value.trim();
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const id = form.dataset.editingId || `fest-${Date.now()}`;
+      await setDoc(doc(db, 'festivities', id), {
+        id,
+        title: form.title.value.trim() || 'Decoración',
+        imageUrl: reader.result,
+        left: Number(form.left.value) || 50,
+        top: Number(form.top.value) || 20,
+        size: Number(form.size.value) || 16,
+        rotate: Number(form.rotate.value) || 0,
+        location: form.location.value || 'floating',
+        published: form.published.checked,
+        updatedAt: Date.now()
+      });
+      setStatus('Decoración guardada.');
+      form.reset();
+      delete form.dataset.editingId;
+      await refreshFestivities();
+    };
+    reader.readAsDataURL(file);
+    return;
+  }
+  if (!imageUrl) {
+    setStatus('Agrega una URL o sube una imagen.', true);
+    return;
+  }
+  const id = form.dataset.editingId || `fest-${Date.now()}`;
+  await setDoc(doc(db, 'festivities', id), {
+    id,
+    title: form.title.value.trim() || 'Decoración',
+    imageUrl,
+    left: Number(form.left.value) || 50,
+    top: Number(form.top.value) || 20,
+    size: Number(form.size.value) || 16,
+    rotate: Number(form.rotate.value) || 0,
+    location: form.location.value || 'floating',
+    published: form.published.checked,
+    updatedAt: Date.now()
+  });
+  setStatus('Decoración guardada.');
+  form.reset();
+  delete form.dataset.editingId;
+  await refreshFestivities();
+});
+
+document.querySelector('[data-role-form]').addEventListener('submit', async event => {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const uid = form.uid.value;
+  const role = form.role.value;
+  if (!uid) {
+    setStatus('Selecciona un usuario primero.', true);
+    return;
+  }
+  try {
+    const userDoc = doc(db, 'profiles', uid);
+    const profile = await (await fetch(`https://firestore.googleapis.com/v1/projects/${auth.app.options.projectId}/databases/(default)/documents/profiles/${uid}`)).json();
+    await setDoc(userDoc, { roles: { [role]: true, admin: role === 'admin' || Boolean(profile.fields?.roles?.mapValue?.fields?.admin?.booleanValue) }, updatedAt: Date.now() }, { merge: true });
+    setStatus('Rol actualizado en Firestore.');
+  } catch (error) {
+    setStatus(error.message || 'No se pudo actualizar el rol.', true);
+  }
 });
 
 document.querySelector('[data-badge-form]').addEventListener('submit', async event => {
