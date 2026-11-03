@@ -1,14 +1,6 @@
 import { onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js';
-import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, setDoc, updateDoc, writeBatch } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js';
-import { getFunctions, httpsCallable } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-functions.js';
-import { appFirebase, auth, db } from './firebase-client.js';
-
-const functionsApp = getFunctions(appFirebase, 'us-central1');
-const functions = {
-  setCustomerBadge: httpsCallable(functionsApp, 'setCustomerBadge'),
-  adjustBalance: httpsCallable(functionsApp, 'adjustBalance'),
-  recordPurchase: httpsCallable(functionsApp, 'recordPurchase')
-};
+import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, increment, runTransaction, serverTimestamp, setDoc, updateDoc, writeBatch } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js';
+import { auth, db } from './firebase-client.js';
 
 const guard = document.querySelector('[data-admin-guard]');
 const panel = document.querySelector('[data-admin-panel]');
@@ -1456,8 +1448,12 @@ document.querySelector('[data-role-form]').addEventListener('submit', async even
   }
   try {
     const userDoc = doc(db, 'profiles', uid);
-    const profile = await (await fetch(`https://firestore.googleapis.com/v1/projects/${auth.app.options.projectId}/databases/(default)/documents/profiles/${uid}`)).json();
-    await setDoc(userDoc, { roles: { [role]: true, admin: role === 'admin' || Boolean(profile.fields?.roles?.mapValue?.fields?.admin?.booleanValue) }, updatedAt: Date.now() }, { merge: true });
+    const profileSnapshot = await getDoc(userDoc);
+    const roles = profileSnapshot.data()?.roles || {};
+    await setDoc(userDoc, {
+      roles: { ...roles, [role]: true, admin: role === 'admin' || Boolean(roles.admin) },
+      updatedAt: serverTimestamp()
+    }, { merge: true });
     setStatus('Rol actualizado en Firestore.');
   } catch (error) {
     setStatus(error.message || 'No se pudo actualizar el rol.', true);
@@ -1473,7 +1469,17 @@ document.querySelector('[data-badge-form]').addEventListener('submit', async eve
     return;
   }
   try {
-    await functions.setCustomerBadge({ uid: data.uid, badge: data.badge, reason: data.reason });
+    const allowedBadges = new Set(['cliente', 'vip', 'veterano']);
+    const reason = data.reason.trim();
+    if (!allowedBadges.has(data.badge) || reason.length > 300) throw new Error('La insignia o el motivo no son válidos.');
+    await updateDoc(doc(db, 'profiles', data.uid), {
+      [`badges.${data.badge}`]: {
+        reason,
+        assignedBy: auth.currentUser.uid,
+        assignedAt: serverTimestamp()
+      },
+      updatedAt: serverTimestamp()
+    });
     setStatus('Insignia actualizada.');
   } catch (error) {
     setStatus(error.message || 'No pudimos actualizar la insignia.', true);
@@ -1489,8 +1495,31 @@ document.querySelector('[data-balance-form]').addEventListener('submit', async e
     return;
   }
   try {
-    await functions.adjustBalance({ uid: data.uid, amountCop: Number(data.amountCop), reason: data.reason });
-    setStatus('Saldo ajustado.');
+    const amountCop = Number(data.amountCop);
+    const reason = data.reason.trim();
+    if (!Number.isSafeInteger(amountCop) || amountCop === 0 || reason.length > 300) {
+      throw new Error('El ajuste debe ser un valor entero distinto de cero y tener un motivo válido.');
+    }
+    const profileRef = doc(db, 'profiles', data.uid);
+    const movementRef = doc(collection(db, 'profiles', data.uid, 'balanceTransactions'));
+    const balanceAfterCop = await runTransaction(db, async transaction => {
+      const profileSnapshot = await transaction.get(profileRef);
+      const currentBalance = Number(profileSnapshot.data()?.balanceCop || 0);
+      const nextBalance = currentBalance + amountCop;
+      if (!profileSnapshot.exists() || !Number.isSafeInteger(currentBalance) || !Number.isSafeInteger(nextBalance) || nextBalance < 0) {
+        throw new Error('El saldo resultante no puede ser negativo y el perfil debe existir.');
+      }
+      transaction.update(profileRef, { balanceCop: nextBalance, updatedAt: serverTimestamp() });
+      transaction.set(movementRef, {
+        amountCop,
+        balanceAfterCop: nextBalance,
+        reason,
+        createdAt: serverTimestamp(),
+        createdBy: auth.currentUser.uid
+      });
+      return nextBalance;
+    });
+    setStatus(`Saldo ajustado: ${new Intl.NumberFormat('es-CO').format(balanceAfterCop)} COP.`);
   } catch (error) {
     setStatus(error.message || 'No pudimos ajustar el saldo.', true);
   }
@@ -1505,12 +1534,45 @@ document.querySelector('[data-purchase-form]').addEventListener('submit', async 
     return;
   }
   try {
-    const payload = JSON.parse(data.items);
-    await functions.recordPurchase({
-      uid: data.uid,
-      reference: data.reference,
-      totalCop: Number(data.totalCop),
-      items: payload
+    const reference = data.reference.trim();
+    const totalCop = Number(data.totalCop);
+    const items = JSON.parse(data.items);
+    if (!reference || reference.length > 120 || !Number.isSafeInteger(totalCop) || totalCop < 0 || !Array.isArray(items) || items.length === 0 || items.length > 50) {
+      throw new Error('Los datos de la compra no son válidos.');
+    }
+    const safeItems = items.map(item => {
+      const name = typeof item?.name === 'string' ? item.name.trim() : '';
+      if (!name || name.length > 120) throw new Error('Cada producto debe tener un nombre válido.');
+      const price = Number(item.priceCop);
+      return {
+        name,
+        quantity: Math.min(Math.max(Number(item.quantity) || 1, 1), 100),
+        priceCop: Number.isSafeInteger(price) && price >= 0 ? price : null
+      };
+    });
+    const profileRef = doc(db, 'profiles', data.uid);
+    const purchaseRef = doc(collection(db, 'profiles', data.uid, 'purchases'));
+    await runTransaction(db, async transaction => {
+      const profileSnapshot = await transaction.get(profileRef);
+      if (!profileSnapshot.exists()) throw new Error('No existe el perfil del cliente.');
+      const profile = profileSnapshot.data();
+      const updates = { purchaseCount: increment(1), updatedAt: serverTimestamp() };
+      if (!profile.badges?.cliente) {
+        updates['badges.cliente'] = {
+          reason: 'Insignia asignada por una compra confirmada.',
+          assignedBy: auth.currentUser.uid,
+          assignedAt: serverTimestamp()
+        };
+      }
+      transaction.update(profileRef, updates);
+      transaction.set(purchaseRef, {
+        reference,
+        totalCop,
+        items: safeItems,
+        status: 'confirmed',
+        createdAt: serverTimestamp(),
+        recordedBy: auth.currentUser.uid
+      });
     });
     setStatus('Compra registrada.');
   } catch (error) {
