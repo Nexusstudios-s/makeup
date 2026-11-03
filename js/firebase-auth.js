@@ -31,6 +31,10 @@ dock.innerHTML = `
     <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18m-12 4 2 2 4-4"/></svg>
     <span>Reservar</span>
   </a>
+  <a class="dock-enlace" href="/admin.html" data-admin-link hidden aria-label="Panel administrativo">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v6m0 0 4-4M12 8l-4-4M4 12h6m0 0 4 4m-4-4 4-4M20 12h-6m0 0-4 4m4-4-4-4M12 20v-6m0 0 4 4m-4-4-4 4"/></svg>
+    <span>Admin</span>
+  </a>
   <button class="dock-cuenta" type="button" data-support-open aria-label="Mensajes de soporte">
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a3 3 0 0 1-3 3H9l-6 3V6a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3z"/><path d="M8 9h8M8 13h6"/></svg>
     <span>Mensajes</span>
@@ -286,6 +290,29 @@ function mostrarFeedback(mensaje, error = false) {
   feedback.classList.toggle('error', error);
 }
 
+async function usuarioTieneAccesoAdmin(usuario) {
+  if (!usuario) return false;
+  try {
+    const token = await usuario.getIdTokenResult();
+    const email = (usuario.email || '').trim().toLowerCase();
+    return Boolean(token.claims.admin || token.claims.support || SUPPORT_EMAILS.includes(email));
+  } catch {
+    return SUPPORT_EMAILS.includes((usuario.email || '').trim().toLowerCase());
+  }
+}
+
+function actualizarAccesoAdmin(usuario) {
+  const enlaceAdmin = dock.querySelector('[data-admin-link]');
+  if (!enlaceAdmin) return;
+  if (!usuario) {
+    enlaceAdmin.hidden = true;
+    return;
+  }
+  usuarioTieneAccesoAdmin(usuario).then(tieneAcceso => {
+    enlaceAdmin.hidden = !tieneAcceso;
+  });
+}
+
 function esCuentaSoporte(email) {
   return typeof email === 'string' && SUPPORT_EMAILS.includes(email.trim().toLowerCase());
 }
@@ -440,6 +467,7 @@ async function actualizarSesion(usuario) {
   dock.querySelector('[data-auth-open]').setAttribute('aria-label', usuario ? 'Abrir mi cuenta' : 'Iniciar sesión');
   seccionInvitado.hidden = Boolean(usuario);
   seccionSesion.hidden = !usuario;
+  actualizarAccesoAdmin(usuario);
   if (!usuario) {
     perfilActual = null;
     modal.querySelector('#auth-title').textContent = 'Bienvenida';
