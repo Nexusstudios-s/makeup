@@ -856,13 +856,20 @@ async function refreshSupportChats() {
 async function refreshProductReviews() {
   try {
     const productsSnap = await getDocs(collection(db, 'products'));
-    const reviewsByProduct = await Promise.all(productsSnap.docs.map(async productDoc => {
-      const snap = await getDocs(collection(db, 'products', productDoc.id, 'reviews'));
+    const productsById = new Map(productsSnap.docs.map(productDoc => [productDoc.id, {
+      id: productDoc.id,
+      nombre: productDoc.data().nombre || productDoc.id
+    }]));
+    (window.catalogoLocal?.productos || []).forEach(product => {
+      if (!productsById.has(product.id)) productsById.set(product.id, { id: product.id, nombre: product.nombre || product.id });
+    });
+    const reviewsByProduct = await Promise.all([...productsById.values()].map(async product => {
+      const snap = await getDocs(collection(db, 'products', product.id, 'reviews'));
       return snap.docs.map(reviewDoc => ({
         ...reviewDoc.data(),
         reviewId: reviewDoc.id,
-        productId: productDoc.id,
-        productName: productDoc.data().nombre || productDoc.id,
+        productId: product.id,
+        productName: product.nombre,
         ref: reviewDoc.ref
       }));
     }));
@@ -914,6 +921,7 @@ async function refreshProductReviews() {
     });
   } catch (error) {
     productReviewsList.innerHTML = `<p class="admin-error">No se pudieron cargar las reseñas: ${escapeHtml(error.message || 'Error desconocido')}</p>`;
+    if (pendingReviewsCount) pendingReviewsCount.hidden = true;
   }
 }
 
@@ -1625,3 +1633,4 @@ document.querySelector('[data-purchase-form]').addEventListener('submit', async 
 });
 
 document.querySelector('[data-refresh-users]').addEventListener('click', refreshUsers);
+document.querySelector('[data-refresh-reviews]').addEventListener('click', refreshProductReviews);
