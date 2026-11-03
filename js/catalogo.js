@@ -103,6 +103,7 @@ if (!categoria) {
   encabezado.querySelector('.intro').textContent = categoria.texto;
 
   document.querySelector('.chips').innerHTML = Object.entries(CATEGORIAS)
+    .filter(([, c]) => c.publicado !== false)
     .map(([k, c]) => `<a class="chip${k === clave ? ' activo' : ''}" href="/categoria?c=${k}">${c.titulo}</a>`)
     .join('');
 
@@ -121,3 +122,18 @@ if (!categoria) {
   const pedido = PRODUCTOS.find(p => p.id === abrirId);
   if (pedido) abrirDetalle(pedido);
 }
+
+window.actualizarCatalogoFirebase = () => {
+  const categoriaActual = CATEGORIAS[clave];
+  if (!categoriaActual || categoriaActual.publicado === false) return;
+  document.title = `${categoriaActual.titulo} · ${MARCA_COMPLETA}`;
+  encabezado.style.setProperty('--a', categoriaActual.colores[0]);
+  encabezado.style.setProperty('--b', categoriaActual.colores[1]);
+  encabezado.querySelector('h1').textContent = categoriaActual.titulo;
+  encabezado.querySelector('.intro').textContent = categoriaActual.texto;
+  document.querySelector('.chips').innerHTML = Object.entries(CATEGORIAS)
+    .filter(([, cat]) => cat.publicado !== false)
+    .map(([k, cat]) => `<a class="chip${k === clave ? ' activo' : ''}" href="/categoria?c=${k}">${cat.titulo}</a>`)
+    .join('');
+  pintar();
+};

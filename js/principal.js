@@ -73,6 +73,7 @@ function iniciarGeneral() {
   flotante.innerHTML = ICONOS.chat;
   document.body.append(flotante);
   document.querySelector('.pie-categorias').innerHTML = Object.entries(CATEGORIAS)
+    .filter(([, cat]) => cat.publicado !== false)
     .map(([clave, cat]) => `<a href="/categoria?c=${clave}">${cat.titulo}</a>`).join('');
   iniciarMenuMovil();
 }
@@ -153,7 +154,7 @@ function configurarRed(enlace, url) {
 function iniciarCategorias() {
   const zona = document.querySelector('.categorias');
   if (!zona) return;
-  zona.innerHTML = Object.entries(CATEGORIAS).map(([clave, cat]) => {
+  zona.innerHTML = Object.entries(CATEGORIAS).filter(([, cat]) => cat.publicado !== false).map(([clave, cat]) => {
     const total = PRODUCTOS.filter(p => p.categoria === clave).length;
     return `
       <a class="tarjeta" href="/categoria?c=${clave}" style="--a:${cat.colores[0]};--b:${cat.colores[1]}">
@@ -173,6 +174,27 @@ function iniciarDestacados() {
   if (!zona) return;
   zona.innerHTML = PRODUCTOS.filter(p => p.destacado).slice(0, 4).map(tarjetaProducto).join('');
 }
+
+window.catalogoLocal = { categorias: CATEGORIAS, productos: PRODUCTOS };
+window.aplicarContenidoFirebase = ({ categorias = [], productos = [] }) => {
+  categorias.forEach(categoria => {
+    if (!categoria.id || !CATEGORIAS[categoria.id]) return;
+    Object.assign(CATEGORIAS[categoria.id], categoria);
+  });
+
+  if (productos.length) {
+    PRODUCTOS.splice(0, PRODUCTOS.length, ...productos);
+  }
+
+  iniciarCategorias();
+  iniciarDestacados();
+  ocultarImagenesRotas();
+  iniciarInclinacion();
+  document.querySelector('.pie-categorias').innerHTML = Object.entries(CATEGORIAS)
+    .filter(([, cat]) => cat.publicado !== false)
+    .map(([clave, cat]) => `<a href="/categoria?c=${clave}">${cat.titulo}</a>`).join('');
+  window.actualizarCatalogoFirebase?.();
+};
 
 function iniciarAparicion() {
   const elementos = document.querySelectorAll('.tarjeta, .look, .destacados .producto, .bloque-interno, .aviso-interno, .tienda-enlace, .integracion');
