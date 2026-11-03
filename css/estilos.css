@@ -1,5 +1,17 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; }
 
+@property --color-luz {
+  syntax: "<color>";
+  inherits: false;
+  initial-value: #fff1cb;
+}
+
+@property --halo-luz {
+  syntax: "<color>";
+  inherits: false;
+  initial-value: #ffe29e;
+}
+
 :root {
   --seda: #f5f0f1;
   --papel: #fbf8f8;
@@ -70,6 +82,7 @@ h2 { font-size: clamp(2.3rem, 4.6vw, 3.7rem); max-width: 16ch; }
   position: sticky;
   top: 0;
   z-index: 30;
+  padding-top: .6rem;
   background: rgba(245, 240, 241, .82);
   backdrop-filter: blur(14px);
   border-bottom: 1px solid var(--linea);
@@ -77,10 +90,34 @@ h2 { font-size: clamp(2.3rem, 4.6vw, 3.7rem); max-width: 16ch; }
 
 .barra { display: grid; grid-template-columns: auto 1fr auto; grid-template-areas: "marca nav acciones"; align-items: center; gap: 2rem; padding: .8rem 0; }
 .acciones { display: flex; align-items: center; gap: .8rem; }
+.tema-toggle { position: relative; display: grid; place-items: center; flex: none; width: 40px; height: 40px; padding: 0; overflow: hidden; border: 1px solid var(--linea); border-radius: 50%; background: var(--papel); color: var(--tinta); cursor: pointer; transition: transform .3s var(--curva), background-color .3s, color .3s, border-color .3s; }
+.tema-toggle:hover { transform: rotate(12deg); border-color: var(--malva); }
+.tema-icono { position: absolute; display: block; }
+.tema-luna { left: 6px; bottom: 6px; width: 16px; height: 16px; }
+.tema-sol { top: 5px; right: 5px; width: 14px; height: 14px; color: var(--malva); }
 .barra .boton { padding: .65rem 1.3rem; }
 .marca { display: inline-flex; align-items: center; gap: .7rem; font-family: var(--display); font-size: 1.7rem; line-height: 1; }
 .barra > .marca { grid-area: marca; }
-.marca-nombre { white-space: pre-line; font-size: clamp(1.05rem, 1.35vw, 1.3rem); line-height: .98; letter-spacing: .01em; }
+.marca-nombre {
+  display: inline-block;
+  white-space: pre-line;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  background: linear-gradient(112deg, var(--tinta) 0%, var(--tinta) 42%, #b68b58 50%, var(--tinta) 58%, var(--tinta) 100%);
+  background-size: 230% 100%;
+  background-position: 100% 50%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  font-size: clamp(1.05rem, 1.35vw, 1.3rem);
+  line-height: .98;
+  letter-spacing: .01em;
+  animation: brillo-marca 8s ease-in-out infinite;
+}
+
+@keyframes brillo-marca {
+  0%, 62% { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
+}
 
 .logo-marca {
   width: 42px;
@@ -135,6 +172,57 @@ nav a:hover { background-size: 100% 1px; }
 .carrusel.pausado :is(img, video) { animation-play-state: paused; }
 
 @keyframes zoom { from { transform: scale(1.12); } to { transform: scale(1); } }
+
+.temporada {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: minmax(0, .9fr) minmax(260px, 1.1fr);
+  align-items: center;
+  gap: 1.5rem;
+  min-height: 340px;
+  margin-top: 1.5rem;
+  padding: clamp(2.4rem, 5vw, 4rem);
+  border: 1px solid rgba(227, 207, 164, .2);
+  border-radius: 26px;
+  overflow: hidden;
+  background: linear-gradient(122deg, #1d3832, #29463f 58%, #3b574c);
+  color: #fbf8f1;
+}
+
+.temporada::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: repeating-linear-gradient(128deg, transparent 0 46px, rgba(255, 255, 255, .025) 47px 48px, transparent 49px 96px);
+  pointer-events: none;
+}
+
+.temporada-copy { position: relative; z-index: 2; display: grid; justify-items: start; gap: 1rem; padding-top: 1.2rem; }
+.temporada .sobrelinea { color: #e7c77f; }
+.temporada-copy h2 { max-width: 11ch; font-size: clamp(2.6rem, 5vw, 4.3rem); }
+.temporada-copy > p:not(.sobrelinea) { max-width: 38ch; color: rgba(251, 248, 241, .82); }
+.temporada .boton { background: linear-gradient(#f2d594, #f2d594) no-repeat 0 100% / 0 100% #f7eedc; color: #263d36; }
+.temporada .boton:hover { background-size: 100% 100%; }
+.temporada-arte { position: relative; z-index: 1; min-height: 290px; }
+.temporada-arbol { position: absolute; right: 7%; bottom: -1.6rem; width: min(94%, 390px); height: 350px; object-fit: contain; object-position: center bottom; filter: drop-shadow(0 16px 18px rgba(8, 24, 19, .22)); }
+.temporada-santa { position: absolute; left: 0; bottom: .4rem; width: clamp(76px, 9vw, 112px); filter: drop-shadow(0 8px 9px rgba(8, 24, 19, .28)); }
+.temporada-trineo { position: absolute; top: 1.4rem; right: -1rem; width: clamp(130px, 17vw, 190px); opacity: .94; filter: drop-shadow(0 7px 8px rgba(8, 24, 19, .18)); }
+
+.luces-navidad { position: absolute; top: 0; left: 2.2rem; right: 2.2rem; z-index: 3; height: 58px; pointer-events: none; }
+.luces-navidad::before { content: ""; position: absolute; top: -24px; left: 0; right: 0; height: 58px; border-bottom: 2px solid rgba(215, 196, 151, .78); border-radius: 0 0 50% 50% / 0 0 70% 70%; filter: drop-shadow(0 2px 2px rgba(0, 0, 0, .2)); }
+.bombilla-navidad { position: absolute; top: calc(10px + var(--caida)); left: var(--posicion); width: 9px; height: 14px; border: 1px solid rgba(255, 245, 220, .36); border-radius: 4px 4px 6px 6px; background: linear-gradient(115deg, rgba(255, 255, 255, .9), transparent 34%), var(--color-luz); box-shadow: 0 0 5px var(--halo-luz), 0 0 14px var(--halo-luz), inset 0 -2px 3px rgba(44, 34, 41, .18); opacity: .82; transform: translateX(-50%); transition: --color-luz .8s ease, --halo-luz .8s ease, box-shadow .8s ease; animation: brillo-bombilla var(--duracion-luz) ease-in-out var(--retardo-luz) infinite; }
+.bombilla-navidad::before { content: ""; position: absolute; top: -5px; left: 2px; width: 4px; height: 5px; border-radius: 2px 2px 0 0; background: #b6a477; }
+.luces-cabecera { left: 2.4rem; right: 2.4rem; height: 22px; }
+.luces-cabecera::before { top: 4px; height: 10px; border-bottom-width: 1.5px; border-radius: 0 0 50% 50% / 0 0 90% 90%; }
+.luces-cabecera .bombilla-navidad { top: calc(8px + var(--caida)); width: 7px; height: 10px; border-radius: 4px 4px 5px 5px; }
+.luces-cabecera .bombilla-navidad::before { top: -5px; left: 1px; width: 4px; height: 5px; }
+
+@keyframes brillo-bombilla {
+  0%, 100% { opacity: .65; filter: brightness(.92); }
+  50% { opacity: 1; filter: brightness(1.22); }
+}
 
 .slide::after {
   content: "";
@@ -550,11 +638,17 @@ nav a:hover { background-size: 100% 1px; }
 
 .detalle {
   width: min(920px, 94vw);
+  max-height: 90vh;
+  max-height: 90dvh;
   margin: auto;
   padding: 0;
   border: 0;
   border-radius: 30px;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(139, 100, 119, .55) transparent;
   background: var(--papel);
   color: var(--tinta);
   box-shadow: 0 28px 90px rgba(27, 18, 24, .3);
@@ -578,6 +672,7 @@ nav a:hover { background-size: 100% 1px; }
 .detalle h2 { font-size: clamp(2.2rem, 4vw, 3rem); max-width: none; }
 .detalle ul { display: grid; gap: .3rem; padding-left: 1.1rem; font-size: .95rem; }
 .detalle li::marker { color: var(--malva); }
+.detalle .x { position: sticky; top: .65rem; z-index: 4; margin: .65rem .65rem -42px auto; }
 
 .x {
   position: absolute;
@@ -674,6 +769,15 @@ nav a:hover { background-size: 100% 1px; }
   .menu-toggle[aria-expanded="true"] span:nth-child(2) { opacity: 0; }
   .menu-toggle[aria-expanded="true"] span:last-child { transform: translateY(-7px) rotate(-45deg); }
   .carrusel { height: 72vh; border-radius: 24px; }
+  .temporada { grid-template-columns: minmax(0, 1fr); gap: .4rem; min-height: 0; padding: 2rem 1.5rem 1rem; }
+  .temporada-copy { padding-top: 1.5rem; }
+  .temporada-copy h2 { max-width: 12ch; font-size: clamp(2.5rem, 11vw, 3.5rem); }
+  .temporada-arte { min-height: 250px; }
+  .temporada-arbol { right: 6%; width: 86%; height: 285px; }
+  .temporada-santa { left: 1%; bottom: .2rem; width: 78px; }
+  .temporada-trineo { top: .7rem; right: -1rem; width: 130px; }
+  .luces-navidad { left: 1.3rem; right: 1.3rem; }
+  .luces-cabecera { left: 1.1rem; right: 1.1rem; }
   .texto { bottom: 5.5rem; }
   .controles { left: clamp(1.5rem, 4vw, 3.5rem); right: auto; }
   .categorias { grid-template-columns: 1fr; }
@@ -683,7 +787,8 @@ nav a:hover { background-size: 100% 1px; }
   .fila { flex-direction: column; align-items: flex-start; gap: .4rem; }
   .encabezado-cat { flex-direction: column; align-items: flex-start; }
   .barra-filtros { top: 56px; }
-  .detalle-cuerpo { grid-template-columns: 1fr; }
+  .detalle { max-height: 92vh; max-height: 92dvh; border-radius: 20px; }
+  .detalle-cuerpo { grid-template-columns: minmax(0, 1fr); }
   .detalle .foto { min-height: 300px; }
   .pie-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2rem 1.2rem; }
 }
@@ -912,7 +1017,7 @@ body { top: 0 !important; }
   .galeria-detalle[open] { opacity: 0; transform: translateY(18px) scale(.985); }
   .galeria-detalle[open]::backdrop { background: rgba(35, 25, 32, 0); backdrop-filter: blur(0); }
 }
-.galeria-detalle .x { top: .65rem; right: .65rem; }
+.galeria-detalle .x { position: sticky; top: .2rem; z-index: 4; grid-column: 1 / -1; grid-row: 1; align-self: start; justify-self: end; margin: .2rem .2rem -42px 0; }
 .galeria-visor { grid-column: 1; grid-row: 1; display: grid; place-items: center; min-height: min(64vh, 620px); max-height: 74vh; border-radius: 16px; overflow: hidden; background: #30272e; }
 .galeria-imagen, .galeria-video { width: 100%; height: 100%; max-height: 74vh; object-fit: contain; }
 .galeria-anterior, .galeria-siguiente { position: absolute; top: 50%; z-index: 1; display: grid; place-items: center; width: 46px; height: 46px; border: 1px solid rgba(255, 255, 255, .48); border-radius: 50%; background: rgba(251, 248, 248, .9); color: var(--tinta); font-size: 1.8rem; cursor: pointer; transform: translateY(-50%); transition: background .25s, color .25s, transform .25s var(--curva); }
@@ -923,6 +1028,16 @@ body { top: 0 !important; }
 .galeria-info h2 { max-width: 13ch; font-size: clamp(2rem, 4vw, 3rem); }
 .galeria-contador { color: var(--malva); font-size: .82rem; font-weight: 600; font-variant-numeric: tabular-nums; }
 .galeria-info > p:last-child { opacity: .75; }
+
+@media (min-width: 761px) and (max-width: 1040px) {
+  .barra { grid-template-columns: auto minmax(0, 1fr) auto; gap: .7rem; }
+  .barra nav { gap: .7rem; }
+  .barra nav a { font-size: .84rem; }
+  .acciones { gap: .35rem; }
+  .barra .boton { padding: .58rem .85rem; font-size: .86rem; }
+  .idiomas button { padding: .25rem .46rem; }
+  .tema-toggle { width: 36px; height: 36px; }
+}
 
 @media (max-width: 960px) {
   .tiendas-grid { grid-template-columns: 1fr; }
@@ -941,7 +1056,7 @@ body { top: 0 !important; }
   .galeria-siguiente { left: auto; right: 1rem; }
   .galeria-info { grid-column: 1; grid-row: 2; gap: .4rem; padding: .85rem .75rem .45rem; }
   .galeria-info h2 { max-width: none; font-size: 2rem; }
-  .galeria-detalle .x { top: 1rem; right: 1rem; }
+  .galeria-detalle .x { top: .2rem; margin-top: .2rem; margin-right: .2rem; }
 }
 
 @media (max-width: 560px) {
@@ -952,3 +1067,59 @@ body { top: 0 !important; }
   .galeria-filtros button { justify-content: space-between; }
   .galeria-pagina { columns: 1; }
 }
+
+body.modo-noche {
+  --seda: #151f1c;
+  --papel: #222f2b;
+  --tinta: #f3efe7;
+  --malva: #d7b677;
+  --linea: rgba(243, 239, 231, .16);
+  color-scheme: dark;
+}
+
+body.modo-noche .cabecera { background: rgba(21, 31, 28, .92); }
+body.modo-noche .pie { background: linear-gradient(180deg, rgba(34, 47, 43, .48), rgba(21, 31, 28, .96)); }
+body.modo-noche .tema-toggle { border-color: rgba(243, 239, 231, .2); box-shadow: 0 0 18px rgba(215, 182, 119, .12); }
+body.modo-noche .carrusel { background-color: #111916; }
+body.modo-noche .contacto,
+body.modo-noche .galeria-invitacion,
+body.modo-noche .aviso-interno,
+body.modo-noche .conexiones-canales { background: linear-gradient(125deg, #243730, #292a35 58%, #382a32); }
+body.modo-noche .encabezado-cat { background: radial-gradient(circle at 80% 20%, rgba(255, 255, 255, .08), transparent 45%), linear-gradient(135deg, #263a34, #34483e); }
+body.modo-noche .pagina-hero { background: radial-gradient(circle at 82% 18%, rgba(255, 255, 255, .08), transparent 34%), linear-gradient(125deg, #263a34, #303541 55%, #3b343e); }
+body.modo-noche .reserva-form,
+body.modo-noche .estado-conexion,
+body.modo-noche .bloque-interno,
+body.modo-noche .tienda-enlace,
+body.modo-noche .integracion,
+body.modo-noche .canal-card { border-color: var(--linea); background: rgba(34, 47, 43, .94); color: var(--tinta); }
+body.modo-noche .reserva-campo input,
+body.modo-noche .reserva-campo select,
+body.modo-noche .reserva-campo textarea,
+body.modo-noche .buscador,
+body.modo-noche .orden { border-color: var(--linea); background: #182320; color: var(--tinta); color-scheme: dark; }
+body.modo-noche .galeria-filtros { border-color: var(--linea); background: rgba(34, 47, 43, .88); }
+body.modo-noche .galeria-filtros button:hover { background: rgba(255, 255, 255, .08); }
+body.modo-noche .panel,
+body.modo-noche .look-titulo,
+body.modo-noche .look-ver,
+body.modo-noche .total,
+body.modo-noche .etiqueta,
+body.modo-noche .ver,
+body.modo-noche .pie-grid .red-social { border-color: var(--linea); background: rgba(34, 47, 43, .94); color: var(--tinta); }
+body.modo-noche .panel p,
+body.modo-noche .intro,
+body.modo-noche .contacto p,
+body.modo-noche .sobre-texto p { color: rgba(243, 239, 231, .78); }
+body.modo-noche .detalle,
+body.modo-noche .galeria-detalle { border: 1px solid rgba(243, 239, 231, .12); background: #202c29; color: var(--tinta); }
+body.modo-noche .x { background: rgba(34, 47, 43, .94); color: var(--tinta); }
+body.modo-noche .detalle .foto { background: linear-gradient(145deg, #293731, #242b32); }
+body.modo-noche .galeria-visor { background: #111916; }
+body.modo-noche .galeria-anterior,
+body.modo-noche .galeria-siguiente { border-color: rgba(255, 255, 255, .22); background: rgba(34, 47, 43, .9); color: var(--tinta); }
+body.modo-noche .galeria-anterior:hover,
+body.modo-noche .galeria-siguiente:hover { background: var(--tinta); color: var(--seda); }
+body.modo-noche .luces-navidad::before { border-color: rgba(226, 212, 171, .88); }
+body.modo-noche .bombilla-navidad { border-color: rgba(255, 255, 255, .55); opacity: 1; box-shadow: 0 0 7px var(--halo-luz), 0 0 19px var(--halo-luz), 0 0 32px var(--halo-luz), inset 0 -2px 3px rgba(44, 34, 41, .16); }
+body.modo-noche .luces-cabecera .bombilla-navidad { opacity: 1; }
