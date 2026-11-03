@@ -32,6 +32,11 @@ function ocultarImagenesRotas(raiz = document) {
 function tarjetaProducto(producto, i = 0) {
   const categoria = CATEGORIAS[producto.categoria] || { colores: ['#e7d7d2', '#cdb5ad'] };
   const tonos = producto.tonos || [];
+  const disponibilidad = producto.availability === 'available'
+    ? '<span class="etiqueta disponibilidad-disponible">Disponible</span>'
+    : producto.availability === 'soldOut'
+      ? '<span class="etiqueta disponibilidad-agotado">Agotado</span>'
+      : '';
   const muestras = tonos.slice(0, 5)
     .map(t => `<span class="muestra" style="--c:${t.c}" title="${t.n}"></span>`).join('');
   const extra = tonos.length > 5 ? `<span class="mas">+${tonos.length - 5}</span>` : '';
@@ -44,6 +49,7 @@ function tarjetaProducto(producto, i = 0) {
       <div class="foto">
         <img src="${producto.imagen}" alt="${producto.nombre}" loading="lazy">
         ${producto.etiqueta ? `<span class="etiqueta">${producto.etiqueta}</span>` : ''}
+        ${disponibilidad}
         <span class="ver">Ver detalles</span>
       </div>
       <h3>${producto.nombre}</h3>

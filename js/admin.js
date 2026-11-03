@@ -1,12 +1,10 @@
 import { onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js';
-import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, setDoc } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js';
+import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, setDoc, updateDoc, writeBatch } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js';
 import { getFunctions, httpsCallable } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-functions.js';
 import { appFirebase, auth, db } from './firebase-client.js';
 
 const functionsApp = getFunctions(appFirebase, 'us-central1');
 const functions = {
-  listUsers: httpsCallable(functionsApp, 'listUsers'),
-  deleteUser: httpsCallable(functionsApp, 'deleteUser'),
   setCustomerBadge: httpsCallable(functionsApp, 'setCustomerBadge'),
   adjustBalance: httpsCallable(functionsApp, 'adjustBalance'),
   recordPurchase: httpsCallable(functionsApp, 'recordPurchase')
@@ -21,6 +19,7 @@ const usersList = document.querySelector('[data-users-list]');
 const reservationsList = document.querySelector('[data-reservas-list]');
 const festivitiesList = document.querySelector('[data-festivities-list]');
 const supportChatsList = document.querySelector('[data-support-chats-list]');
+const productReviewsList = document.querySelector('[data-product-reviews-list]');
 const globalNotificationsList = document.querySelector('[data-global-notifications-list]');
 const productsList = document.querySelector('[data-products-list]');
 const categoriesList = document.querySelector('[data-categories-list]');
@@ -287,7 +286,7 @@ function parseJsonArray(valor, fallback = []) {
 
 function renderUsers(users) {
   window.__adminUsers = users;
-  const options = users.map(user => `<option value="${user.uid}">${user.email || user.displayName || user.uid}</option>`).join('');
+  const options = users.map(user => `<option value="${escapeHtml(user.uid)}">${escapeHtml(user.email || user.displayName || user.uid)}</option>`).join('');
   userSelects.forEach(select => {
     select.innerHTML = options || '<option value="">Sin usuarios</option>';
   });
@@ -296,27 +295,12 @@ function renderUsers(users) {
     ? users.map(user => `
       <article class="admin-user-row">
         <div>
-          <strong>${user.displayName || 'Sin nombre'}</strong>
-          <small>${user.email || 'Sin email'}</small>
+          <strong>${escapeHtml(user.displayName || 'Sin nombre')}</strong>
+          <small>${escapeHtml(user.email || user.uid)}</small>
         </div>
-        <button class="boton claro" type="button" data-delete-user="${user.uid}">Eliminar</button>
       </article>`).join('')
-    : '<p>No hay usuarios.</p>';
+    : '<p>No hay perfiles guardados. Aparecerán cuando las cuentas vuelvan a iniciar sesión.</p>';
   actualizarResumenAdmin();
-
-  usersList.querySelectorAll('[data-delete-user]').forEach(boton => {
-    boton.addEventListener('click', async () => {
-      const uid = boton.dataset.deleteUser;
-      if (!uid) return;
-      try {
-        await functions.deleteUser({ uid });
-        setStatus('Usuario eliminado.');
-        await refreshUsers();
-      } catch (error) {
-        setStatus(error.message || 'No pudimos eliminar el usuario.', true);
-      }
-    });
-  });
 }
 
 function renderList(container, items, renderItem, emptyText) {
@@ -608,8 +592,10 @@ function mostrarPreviewEjemplo(src) {
 async function refreshUsers() {
   usersList.innerHTML = '<p class="admin-loading">Cargando usuarios…</p>';
   try {
-    const resultado = await functions.listUsers({ pageSize: 100 });
-    renderUsers(resultado.data.users || []);
+    const snapshot = await getDocs(collection(db, 'profiles'));
+    const users = snapshot.docs.map(profile => ({ uid: profile.id, ...profile.data() }));
+    users.sort((a, b) => (a.displayName || a.email || '').localeCompare(b.displayName || b.email || '', 'es'));
+    renderUsers(users);
   } catch (error) {
     usersList.innerHTML = `<p class="admin-error">No se pudieron cargar los usuarios: ${escapeHtml(error.message || error.code || 'error desconocido')}</p>`;
     setStatus(error.message || 'No se pudo cargar la lista.', true);
@@ -635,6 +621,7 @@ async function refreshReservations() {
         <div class="row-actions">
           <button class="boton claro" type="button" data-approve="${item.id}">Aceptar</button>
           <button class="boton claro" type="button" data-reject="${item.id}">Rechazar</button>
+          <button class="boton claro" type="button" data-delete-reservation="${item.id}">Eliminar</button>
         </div>
       </article>
     `, 'No hay reservas.');
@@ -666,6 +653,20 @@ async function refreshReservations() {
             await actualizarReserva(button.dataset.reject, { status: 'rechazada', decision: motivo || 'No hay disponibilidad para esa fecha.' });
           }
         });
+      });
+    });
+
+    reservationsList.querySelectorAll('[data-delete-reservation]').forEach(button => {
+      button.addEventListener('click', async () => {
+        const reserva = reservas.find(item => item.id === button.dataset.deleteReservation);
+        if (!confirm(`¿Eliminar la reserva de ${reserva?.nombre || 'este cliente'}?`)) return;
+        try {
+          await deleteDoc(doc(db, 'reservas', button.dataset.deleteReservation));
+          setStatus('Reserva eliminada.');
+          await refreshReservations();
+        } catch (error) {
+          setStatus(error.message || 'No se pudo eliminar la reserva.', true);
+        }
       });
     });
   } catch (error) {
@@ -761,6 +762,7 @@ async function refreshSupportChats() {
         </div>
         <div class="row-actions">
           <button class="boton claro" type="button" data-reply-chat="${item.id}">Responder</button>
+          <button class="boton claro" type="button" data-delete-chat="${item.id}">Eliminar chat</button>
         </div>
       </article>
     `, 'No hay mensajes de soporte.');
@@ -791,8 +793,91 @@ async function refreshSupportChats() {
         });
       });
     });
+    supportChatsList.querySelectorAll('[data-delete-chat]').forEach(button => {
+      button.addEventListener('click', async () => {
+        const chat = chats.find(item => item.id === button.dataset.deleteChat);
+        if (!confirm(`¿Eliminar el chat con ${chat?.userName || chat?.userEmail || 'este cliente'} y todos sus mensajes?`)) return;
+        try {
+          const messagesRef = collection(db, 'supportChats', button.dataset.deleteChat, 'messages');
+          let messages = await getDocs(messagesRef);
+          while (!messages.empty) {
+            for (let offset = 0; offset < messages.docs.length; offset += 500) {
+              const batch = writeBatch(db);
+              messages.docs.slice(offset, offset + 500).forEach(message => batch.delete(message.ref));
+              await batch.commit();
+            }
+            messages = await getDocs(messagesRef);
+          }
+          await deleteDoc(doc(db, 'supportChats', button.dataset.deleteChat));
+          setStatus('Chat y mensajes eliminados.');
+          await refreshSupportChats();
+        } catch (error) {
+          setStatus(error.message || 'No se pudo eliminar el chat.', true);
+        }
+      });
+    });
   } catch (error) {
     setStatus(error.message || 'No se pudieron cargar los mensajes.', true);
+  }
+}
+
+async function refreshProductReviews() {
+  try {
+    const productsSnap = await getDocs(collection(db, 'products'));
+    const reviewsByProduct = await Promise.all(productsSnap.docs.map(async productDoc => {
+      const snap = await getDocs(collection(db, 'products', productDoc.id, 'reviews'));
+      return snap.docs.map(reviewDoc => ({
+        ...reviewDoc.data(),
+        reviewId: reviewDoc.id,
+        productId: productDoc.id,
+        productName: productDoc.data().nombre || productDoc.id,
+        ref: reviewDoc.ref
+      }));
+    }));
+    const pending = reviewsByProduct.flat().filter(review => review.approved !== true);
+    renderList(productReviewsList, pending, review => {
+      const badges = ['cliente', 'vip', 'veterano']
+        .filter(key => review.authorBadges?.[key] === true)
+        .map(key => `<span class="resena-insignia resena-insignia-${key}" title="${escapeHtml(key)}">${key === 'cliente' ? '✓' : key === 'vip' ? 'V' : '★'}</span>`)
+        .join('');
+      return `
+        <article class="admin-row admin-review-row">
+          <div class="admin-review-content">
+            <div class="admin-review-heading"><strong>${escapeHtml(review.authorName || 'Cliente')}</strong><span class="resena-insignias">${badges}</span><span class="admin-tag">${'★'.repeat(Math.max(0, Math.min(5, Number(review.rating) || 0)))}${'☆'.repeat(5 - Math.max(0, Math.min(5, Number(review.rating) || 0)))}</span></div>
+            <small>${escapeHtml(review.productName)} · ${escapeHtml(review.authorId || '')}</small>
+            <p>${escapeHtml(review.body || '')}</p>
+          </div>
+          <div class="row-actions"><button class="boton" type="button" data-review-action="approve" data-product-id="${escapeHtml(review.productId)}" data-review-id="${escapeHtml(review.reviewId)}">Aprobar</button><button class="boton claro" type="button" data-review-action="reject" data-product-id="${escapeHtml(review.productId)}" data-review-id="${escapeHtml(review.reviewId)}">Rechazar</button></div>
+        </article>
+      `;
+    }, 'No hay reseñas pendientes.');
+
+    productReviewsList.querySelectorAll('[data-review-action="approve"]').forEach(button => {
+      button.addEventListener('click', async () => {
+        const { productId, reviewId } = button.dataset;
+        try {
+          await updateDoc(doc(db, 'products', productId, 'reviews', reviewId), { approved: true, reviewedAt: Date.now() });
+          setStatus('Reseña aprobada y visible en el producto.');
+          await refreshProductReviews();
+        } catch (error) {
+          setStatus(error.message || 'No se pudo aprobar la reseña.', true);
+        }
+      });
+    });
+    productReviewsList.querySelectorAll('[data-review-action="reject"]').forEach(button => {
+      button.addEventListener('click', async () => {
+        const { productId, reviewId } = button.dataset;
+        try {
+          await deleteDoc(doc(db, 'products', productId, 'reviews', reviewId));
+          setStatus('Reseña rechazada y eliminada.');
+          await refreshProductReviews();
+        } catch (error) {
+          setStatus(error.message || 'No se pudo rechazar la reseña.', true);
+        }
+      });
+    });
+  } catch (error) {
+    productReviewsList.innerHTML = `<p class="admin-error">No se pudieron cargar las reseñas: ${escapeHtml(error.message || 'Error desconocido')}</p>`;
   }
 }
 
@@ -937,6 +1022,7 @@ function cargarProductoEnFormulario(id, lista) {
   form.tonos.value = JSON.stringify(item.tonos || [], null, 2);
   renderTonosProducto(item.tonos || []);
   form.published.checked = Boolean(item.published);
+  form.availability.value = item.availability || 'inquire';
   form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
@@ -995,6 +1081,7 @@ async function checkAdmin(usuario) {
   await refreshReservations();
   await refreshFestivities();
   await refreshSupportChats();
+  await refreshProductReviews();
   await refreshCarousel();
   await refreshExamples();
   await refreshLegalPages();
@@ -1163,6 +1250,7 @@ document.querySelector('[data-product-form]').addEventListener('submit', async e
       categoria: form.categoria.value,
       imagen,
       precio: form.precio.value ? Number(form.precio.value) : null,
+      availability: form.availability.value || 'inquire',
       descripcion: form.descripcion.value.trim(),
       detalles: parseJsonArray(form.detalles.value, []),
       tonos: leerTonosProducto(),

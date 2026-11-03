@@ -238,6 +238,7 @@ async function cargarPerfil(usuario) {
   if (!perfil.exists()) {
     const datosIniciales = {
       displayName: usuario.displayName || usuario.email?.split('@')[0] || 'Cliente',
+      email: usuario.email || '',
       photoURL: usuario.photoURL || '',
       bannerURL: '',
       description: '',
@@ -245,6 +246,9 @@ async function cargarPerfil(usuario) {
       updatedAt: serverTimestamp()
     };
     await setDoc(perfilRef, datosIniciales);
+    perfil = await getDoc(perfilRef);
+  } else if (!perfil.data()?.email && usuario.email) {
+    await setDoc(perfilRef, { email: usuario.email, updatedAt: serverTimestamp() }, { merge: true });
     perfil = await getDoc(perfilRef);
   }
 
@@ -501,6 +505,7 @@ function cambiarModo(nuevoModo) {
 
 async function actualizarSesion(usuario) {
   usuarioActual = usuario;
+  window.dispatchEvent(new CustomEvent('auth:state-change', { detail: { user: usuario } }));
   dock.querySelector('[data-auth-label]').textContent = usuario ? 'Mi cuenta' : 'Acceder';
   dock.querySelector('[data-auth-open]').setAttribute('aria-label', usuario ? 'Abrir mi cuenta' : 'Iniciar sesión');
   seccionInvitado.hidden = Boolean(usuario);
